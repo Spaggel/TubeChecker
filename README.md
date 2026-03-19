@@ -16,13 +16,40 @@ Runs as a single Docker container with a built-in web UI. No external services, 
 
 ## Requirements
 
-- Docker + Docker Compose
+- Docker
 - A running [MeTube](https://github.com/alexta69/metube) instance
 - (Optional) A running [Jellyfin](https://jellyfin.org) instance
 
 ---
 
-## Quick Start (published image)
+## Quick Start (docker run)
+
+```bash
+docker run -d \
+  --name tubechecker \
+  -p 8083:8083 \
+  -v tubechecker-data:/data \
+  -e METUBE_URL=http://your-metube-host:8081 \
+  ghcr.io/spaggel/tubechecker:latest
+```
+
+The UI is available at `http://localhost:8083`.
+
+Open **Settings** to confirm the MeTube URL, then add channels from the **Channels** view.
+
+> **If MeTube is also running in Docker on the same machine**, containers can't reach each other via `localhost`. Either place both on a shared network:
+> ```bash
+> docker network create media
+> docker run -d --name tubechecker --network media -p 8083:8083 \
+>   -v tubechecker-data:/data \
+>   -e METUBE_URL=http://metube:8081 \
+>   ghcr.io/spaggel/tubechecker:latest
+> ```
+> Or use `host.docker.internal` as the hostname (Mac/Windows only; Linux typically uses `172.17.0.1`).
+
+---
+
+## Quick Start (docker compose)
 
 No clone required. Create a `docker-compose.yml`:
 
@@ -35,12 +62,15 @@ services:
     ports:
       - "8083:8083"
     volumes:
-      - ./data:/data
+      - tubechecker-data:/data
     environment:
       - METUBE_URL=http://your-metube-host:8081
       - CHECK_INTERVAL=60
       # - JELLYFIN_URL=http://your-jellyfin-host:8096
       # - JELLYFIN_API_KEY=your_key_here
+
+volumes:
+  tubechecker-data:
 ```
 
 Then run:
@@ -50,8 +80,6 @@ docker compose up -d
 ```
 
 The UI is available at `http://localhost:8083`.
-
-Open **Settings** and set your MeTube URL, then add channels from the **Channels** view.
 
 ---
 
