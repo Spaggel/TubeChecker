@@ -52,14 +52,14 @@ async def lifespan(app: FastAPI):
     _init_db()
     interval = int(_get_setting("check_interval"))
     sched_module.start_scheduler(interval)
-    logger.info("MeTube Channel Watcher started")
+    logger.info("TubeChecker started")
     yield
     sched_module.shutdown_scheduler()
-    logger.info("MeTube Channel Watcher stopped")
+    logger.info("TubeChecker stopped")
 
 
 app = FastAPI(
-    title="MeTube Channel Watcher",
+    title="TubeChecker",
     description="Watches YouTube channels via RSS and sends new videos to MeTube",
     version="1.0.0",
     lifespan=lifespan,
