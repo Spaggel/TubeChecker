@@ -1,0 +1,61 @@
+from datetime import datetime
+from typing import Optional, List
+from pydantic import BaseModel
+
+
+class ChannelCreate(BaseModel):
+    channel_id: str
+    name: Optional[str] = None
+    start_date: Optional[datetime] = None
+    download_dir: Optional[str] = None
+    enabled: bool = True
+
+
+class ChannelUpdate(BaseModel):
+    name: Optional[str] = None
+    start_date: Optional[datetime] = None
+    download_dir: Optional[str] = None
+    enabled: Optional[bool] = None
+
+
+class ChannelOut(BaseModel):
+    id: int
+    channel_id: str
+    name: str
+    start_date: Optional[datetime] = None
+    download_dir: Optional[str] = None
+    enabled: bool
+    last_checked: Optional[datetime] = None
+    created_at: datetime
+    video_count: int = 0
+    latest_video_date: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class VideoOut(BaseModel):
+    id: int
+    channel_id: int
+    video_id: str
+    title: str
+    published_at: datetime
+    sent_at: datetime
+    status: str
+    error: Optional[str] = None
+    channel_name: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
+class SettingsOut(BaseModel):
+    metube_url: str
+    check_interval: int
+    jellyfin_url: str = ""
+    jellyfin_api_key: str = ""
+
+
+class SettingsUpdate(BaseModel):
+    metube_url: Optional[str] = None
+    check_interval: Optional[int] = None
+    jellyfin_url: Optional[str] = None
+    jellyfin_api_key: Optional[str] = None

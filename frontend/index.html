@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MeTube Channel Watcher</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div id="app">
+
+  <!-- ── Navbar ─────────────────────────────────────────────── -->
+  <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom px-3">
+    <span class="navbar-brand fw-semibold d-flex align-items-center gap-2">
+      <i class="bi bi-rss-fill text-danger"></i> MeTube Channel Watcher
+    </span>
+    <div class="ms-auto d-flex gap-2 align-items-center">
+      <span v-if="checkingAll" class="text-secondary small me-2">
+        <span class="spinner-border spinner-border-sm me-1"></span>Checking…
+      </span>
+      <ul class="nav nav-pills">
+        <li class="nav-item">
+          <a class="nav-link" :class="{active: view==='channels'}" href="#" @click.prevent="switchView('channels')">
+            <i class="bi bi-collection-play me-1"></i>Channels
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" :class="{active: view==='history'}" href="#" @click.prevent="switchView('history')">
+            <i class="bi bi-clock-history me-1"></i>History
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" :class="{active: view==='settings'}" href="#" @click.prevent="switchView('settings')">
+            <i class="bi bi-gear me-1"></i>Settings
+          </a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- ── Alert banner ──────────────────────────────────────── -->
+  <div v-if="alert" class="alert-banner" :class="'alert-' + alert.type" @click="alert=null">
+    <i :class="alert.type === 'success' ? 'bi bi-check-circle-fill' : 'bi bi-exclamation-triangle-fill'"></i>
+    {{ alert.message }}
+    <button type="button" class="btn-close btn-close-white ms-auto" aria-label="Close"></button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       VIEW: CHANNELS
+  ══════════════════════════════════════════════════════════════ -->
+  <main v-if="view==='channels'" class="container-lg py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h4 class="mb-0 fw-semibold">Channels</h4>
+        <p class="text-secondary mb-0 small">{{ channels.length }} channel(s) configured</p>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary btn-sm" @click="checkAll" :disabled="checkingAll">
+          <i class="bi bi-arrow-repeat me-1"></i>Check All Now
+        </button>
+        <button v-if="settings.jellyfin_url" class="btn btn-outline-info btn-sm"
+          @click="refreshJellyfin" :disabled="jellyfinRefreshing">
+          <span v-if="jellyfinRefreshing" class="spinner-border spinner-border-sm me-1"></span>
+          <i v-else class="bi bi-collection-play-fill me-1"></i>Refresh Jellyfin
+        </button>
+        <button class="btn btn-danger btn-sm" @click="openAddModal">
+          <i class="bi bi-plus-lg me-1"></i>Add Channel
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div v-if="loading.channels" class="text-center py-5 text-secondary">
+      <div class="spinner-border mb-2"></div><br>Loading channels…
+    </div>
+
+    <!-- Empty state -->
+    <div v-else-if="!channels.length" class="empty-state">
+      <i class="bi bi-collection-play display-4 d-block mb-3 text-secondary"></i>
+      <p class="text-secondary mb-3">No channels yet. Add your first YouTube channel to get started.</p>
+      <button class="btn btn-danger" @click="openAddModal">
+        <i class="bi bi-plus-lg me-1"></i>Add Channel
+      </button>
+    </div>
+
+    <!-- Channel table -->
+    <div v-else class="card border-0 shadow-sm">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-header">
+            <tr>
+              <th>Channel</th>
+              <th>Start Date</th>
+              <th>Download Folder</th>
+              <th class="text-center">Videos Sent</th>
+              <th>Latest Video</th>
+              <th>Last Checked</th>
+              <th class="text-center">Status</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="ch in channels" :key="ch.id">
+              <td>
+                <div class="fw-medium">
+                  <a :href="'https://www.youtube.com/channel/' + ch.channel_id"
+                     target="_blank" rel="noopener"
+                     class="text-decoration-none link-light">
+                    {{ ch.name }}
+                    <i class="bi bi-box-arrow-up-right ms-1 small text-secondary"></i>
+                  </a>
+                </div>
+                <div class="text-secondary small font-monospace">{{ ch.channel_id }}</div>
+              </td>
+              <td class="text-secondary small">
+                {{ ch.start_date ? formatDate(ch.start_date) : '—' }}
+              </td>
+              <td class="text-secondary small">
+                <span v-if="ch.download_dir" class="badge bg-secondary font-monospace">{{ ch.download_dir }}</span>
+                <span v-else class="text-secondary fst-italic">{{ ch.name }}</span>
+              </td>
+              <td class="text-center">
+                <span class="badge bg-primary rounded-pill">{{ ch.video_count }}</span>
+              </td>
+              <td class="text-secondary small">
+                {{ ch.latest_video_date ? formatDate(ch.latest_video_date) : '—' }}
+              </td>
+              <td class="text-secondary small">
+                {{ ch.last_checked ? formatRelative(ch.last_checked) : 'Never' }}
+              </td>
+              <td class="text-center">
+                <div class="form-check form-switch d-flex justify-content-center mb-0">
+                  <input class="form-check-input" type="checkbox" :checked="ch.enabled"
+                    @change="toggleEnabled(ch)" style="cursor:pointer">
+                </div>
+              </td>
+              <td class="text-end">
+                <div class="btn-group btn-group-sm">
+                  <button class="btn btn-outline-secondary" title="View Videos"
+                    @click="openChannelVideos(ch)">
+                    <i class="bi bi-collection-play"></i>
+                  </button>
+                  <button class="btn btn-outline-secondary" title="Check Now"
+                    @click="checkChannel(ch)" :disabled="ch._checking">
+                    <span v-if="ch._checking" class="spinner-border spinner-border-sm"></span>
+                    <i v-else class="bi bi-arrow-repeat"></i>
+                  </button>
+                  <button class="btn btn-outline-secondary" title="Edit" @click="openEditModal(ch)">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button class="btn btn-outline-danger" title="Delete" @click="deleteChannel(ch)">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- ══════════════════════════════════════════════════════════
+       VIEW: HISTORY
+  ══════════════════════════════════════════════════════════════ -->
+  <main v-if="view==='history'" class="container-lg py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h4 class="mb-0 fw-semibold">Download History</h4>
+        <p class="text-secondary mb-0 small">Most recent {{ history.length }} entries</p>
+      </div>
+      <button class="btn btn-outline-secondary btn-sm" @click="loadHistory">
+        <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+      </button>
+      <button
+        v-if="failedCount > 0"
+        class="btn btn-outline-warning btn-sm"
+        @click="retryAllFailed"
+        :disabled="retryingAll">
+        <span v-if="retryingAll" class="spinner-border spinner-border-sm me-1"></span>
+        <i v-else class="bi bi-arrow-repeat me-1"></i>Retry All Failed ({{ failedCount }})
+      </button>
+    </div>
+
+    <div v-if="loading.history" class="text-center py-5 text-secondary">
+      <div class="spinner-border mb-2"></div><br>Loading history…
+    </div>
+
+    <div v-else-if="!history.length" class="empty-state">
+      <i class="bi bi-clock-history display-4 d-block mb-3 text-secondary"></i>
+      <p class="text-secondary">No downloads yet. Add channels and they will appear here once videos are dispatched.</p>
+    </div>
+
+    <div v-else class="card border-0 shadow-sm">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-header">
+            <tr>
+              <th>Video</th>
+              <th>Channel</th>
+              <th>Published</th>
+              <th>Dispatched</th>
+              <th class="text-center">Status</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="v in history" :key="v.id">
+              <td>
+                <a :href="'https://www.youtube.com/watch?v=' + v.video_id" target="_blank"
+                   rel="noopener" class="text-decoration-none fw-medium link-light">
+                  {{ v.title }}
+                  <i class="bi bi-box-arrow-up-right ms-1 small text-secondary"></i>
+                </a>
+              </td>
+              <td class="text-secondary small">{{ v.channel_name }}</td>
+              <td class="text-secondary small">{{ formatDate(v.published_at) }}</td>
+              <td class="text-secondary small">{{ formatRelative(v.sent_at) }}</td>
+              <td class="text-center">
+                <span v-if="v.status === 'sent'" class="badge bg-success">sent</span>
+                <span v-else
+                  class="badge bg-danger"
+                  :title="v.error || 'Unknown error'"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="left"
+                  style="cursor:help">
+                  failed <i class="bi bi-info-circle ms-1"></i>
+                </span>
+              </td>
+              <td class="text-end">
+                <button
+                  class="btn btn-sm"
+                  :class="v.status === 'failed' ? 'btn-outline-warning' : 'btn-outline-secondary'"
+                  :title="v.status === 'failed' ? 'Retry failed download' : 'Re-send to MeTube'"
+                  :disabled="v._retrying"
+                  @click="retryVideo(v)">
+                  <span v-if="v._retrying" class="spinner-border spinner-border-sm"></span>
+                  <i v-else class="bi bi-arrow-repeat"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- ══════════════════════════════════════════════════════════
+       VIEW: CHANNEL VIDEOS
+  ══════════════════════════════════════════════════════════════ -->
+  <main v-if="view==='channel-videos'" class="container-lg py-4">
+
+    <!-- Header -->
+    <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+      <button class="btn btn-outline-secondary btn-sm" @click="switchView('channels')">
+        <i class="bi bi-arrow-left me-1"></i>Back
+      </button>
+      <div class="flex-grow-1">
+        <h4 class="mb-0 fw-semibold">
+          <a :href="'https://www.youtube.com/channel/' + selectedChannel.channel_id"
+             target="_blank" rel="noopener" class="text-decoration-none link-light">
+            {{ selectedChannel.name }}
+            <i class="bi bi-box-arrow-up-right ms-1 small text-secondary"></i>
+          </a>
+        </h4>
+        <span class="text-secondary small font-monospace">{{ selectedChannel.channel_id }}</span>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <button
+          v-if="channelFailedCount > 0"
+          class="btn btn-outline-warning btn-sm"
+          @click="retryAllFailedChannel"
+          :disabled="retryingAllChannel">
+          <span v-if="retryingAllChannel" class="spinner-border spinner-border-sm me-1"></span>
+          <i v-else class="bi bi-arrow-repeat me-1"></i>
+          Retry All Failed ({{ channelFailedCount }})
+        </button>
+        <button class="btn btn-outline-secondary btn-sm" @click="loadChannelVideos">
+          <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div v-if="loading.channelVideos" class="text-center py-5 text-secondary">
+      <div class="spinner-border mb-2"></div><br>Loading videos…
+    </div>
+
+    <!-- Empty state -->
+    <div v-else-if="!channelVideos.length" class="empty-state">
+      <i class="bi bi-camera-video display-4 d-block mb-3 text-secondary"></i>
+      <p class="text-secondary">No videos tracked yet for this channel. Run a check to discover new videos.</p>
+    </div>
+
+    <!-- Videos table -->
+    <div v-else class="card border-0 shadow-sm">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-header">
+            <tr>
+              <th>Video</th>
+              <th>Published</th>
+              <th>Dispatched</th>
+              <th class="text-center">Status</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="v in channelVideos" :key="v.id">
+              <td>
+                <a :href="'https://www.youtube.com/watch?v=' + v.video_id" target="_blank"
+                   rel="noopener" class="text-decoration-none fw-medium link-light">
+                  {{ v.title }}
+                  <i class="bi bi-box-arrow-up-right ms-1 small text-secondary"></i>
+                </a>
+              </td>
+              <td class="text-secondary small">{{ formatDate(v.published_at) }}</td>
+              <td class="text-secondary small">{{ formatRelative(v.sent_at) }}</td>
+              <td class="text-center">
+                <span v-if="v.status === 'sent'" class="badge bg-success">sent</span>
+                <span v-else
+                  class="badge bg-danger"
+                  :title="v.error || 'Unknown error'"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="left"
+                  style="cursor:help">
+                  failed <i class="bi bi-info-circle ms-1"></i>
+                </span>
+              </td>
+              <td class="text-end">
+                <button
+                  class="btn btn-sm"
+                  :class="v.status === 'failed' ? 'btn-outline-warning' : 'btn-outline-secondary'"
+                  :title="v.status === 'failed' ? 'Retry failed download' : 'Re-send to MeTube'"
+                  :disabled="v._retrying"
+                  @click="retryVideo(v)">
+                  <span v-if="v._retrying" class="spinner-border spinner-border-sm"></span>
+                  <i v-else class="bi bi-arrow-repeat"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- ══════════════════════════════════════════════════════════
+       VIEW: SETTINGS
+  ══════════════════════════════════════════════════════════════ -->
+  <main v-if="view==='settings'" class="container-lg py-4">
+    <div class="row justify-content-center">
+      <div class="col-lg-6">
+        <h4 class="mb-4 fw-semibold">Settings</h4>
+
+        <div v-if="loading.settings" class="text-center py-5 text-secondary">
+          <div class="spinner-border"></div>
+        </div>
+
+        <form v-else @submit.prevent="saveSettings" class="card border-0 shadow-sm p-4">
+          <div class="mb-4">
+            <label class="form-label fw-medium">MeTube URL</label>
+            <input v-model="settings.metube_url" type="url" class="form-control"
+              placeholder="http://localhost:8081" required />
+            <div class="form-text">Base URL of your MeTube instance (no trailing slash).</div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label fw-medium">Check Interval</label>
+            <div class="input-group">
+              <input v-model.number="settings.check_interval" type="number" class="form-control"
+                min="1" max="10080" required />
+              <span class="input-group-text">minutes</span>
+            </div>
+            <div class="form-text">How often to poll each channel's RSS feed (minimum 1, max 10080 = 1 week).</div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary" @click="checkAll" :disabled="checkingAll">
+              <span v-if="checkingAll" class="spinner-border spinner-border-sm me-1"></span>
+              <i v-else class="bi bi-arrow-repeat me-1"></i>Check All Channels Now
+            </button>
+          </div>
+
+          <hr class="my-4" />
+
+          <h6 class="fw-semibold mb-3">
+            <i class="bi bi-collection-play me-1 text-info"></i>Jellyfin Integration
+          </h6>
+
+          <div class="mb-3">
+            <label class="form-label fw-medium">Jellyfin URL</label>
+            <input v-model.trim="settings.jellyfin_url" type="url" class="form-control"
+              placeholder="http://jellyfin:8096" />
+            <div class="form-text">Base URL of your Jellyfin instance. Leave empty to disable.</div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label fw-medium">API Key</label>
+            <input v-model.trim="settings.jellyfin_api_key" type="password"
+              autocomplete="off" class="form-control" placeholder="••••••••••••••••" />
+            <div class="form-text">
+              Generate one in Jellyfin under Dashboard → API Keys.
+            </div>
+          </div>
+
+          <div class="d-flex gap-2 align-items-center">
+            <button type="button" class="btn btn-outline-info btn-sm"
+              :disabled="!settings.jellyfin_url || jellyfinRefreshing"
+              @click="refreshJellyfin">
+              <span v-if="jellyfinRefreshing" class="spinner-border spinner-border-sm me-1"></span>
+              <i v-else class="bi bi-arrow-repeat me-1"></i>Test — Refresh Library Now
+            </button>
+            <span class="text-secondary small" v-if="!settings.jellyfin_url">Configure a URL above to enable.</span>
+          </div>
+
+          <hr class="my-4" />
+
+          <button type="submit" class="btn btn-danger w-100" :disabled="loading.savingSettings">
+            <span v-if="loading.savingSettings" class="spinner-border spinner-border-sm me-1"></span>
+            <i v-else class="bi bi-floppy me-1"></i>Save Settings
+          </button>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <!-- ══════════════════════════════════════════════════════════
+       MODAL: ADD / EDIT CHANNEL
+  ══════════════════════════════════════════════════════════════ -->
+  <div class="modal fade" id="channelModal" tabindex="-1" ref="channelModalEl">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-semibold">
+            <i class="bi" :class="modal.isEdit ? 'bi-pencil-square' : 'bi-plus-circle'"></i>
+            {{ modal.isEdit ? 'Edit Channel' : 'Add Channel' }}
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form @submit.prevent="submitChannelForm">
+          <div class="modal-body">
+
+            <div class="mb-3" v-if="!modal.isEdit">
+              <label class="form-label fw-medium">YouTube Channel <span class="text-danger">*</span></label>
+              <input v-model.trim="form.channel_id" type="text" class="form-control"
+                placeholder="@handle, channel URL, or UC… ID" required :disabled="modal.isEdit" />
+              <div class="form-text">
+                Accepted formats: <code>@handle</code>, <code>https://www.youtube.com/@handle</code>,
+                or a direct channel ID starting with <code>UC</code>.
+              </div>
+            </div>
+            <div class="mb-3" v-else>
+              <label class="form-label fw-medium">Channel ID</label>
+              <input :value="form.channel_id" type="text" class="form-control font-monospace" disabled />
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-medium">Display Name</label>
+              <input v-model.trim="form.name" type="text" class="form-control"
+                placeholder="Auto-fetched from YouTube if left blank" />
+              <div class="form-text" v-if="!modal.isEdit">Leave empty to auto-detect from the RSS feed.</div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-medium">Start Date</label>
+              <input v-model="form.start_date" type="date" class="form-control" />
+              <div class="form-text">Only download videos published on or after this date. Leave empty for all videos.</div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-medium">Download Folder</label>
+              <input v-model.trim="form.download_dir" type="text" class="form-control"
+                placeholder="Defaults to channel name" />
+              <div class="form-text">Subfolder inside MeTube's download directory. Defaults to the channel name.</div>
+            </div>
+
+            <div class="form-check form-switch">
+              <input v-model="form.enabled" class="form-check-input" type="checkbox" id="enabledSwitch" />
+              <label class="form-check-label fw-medium" for="enabledSwitch">Enabled</label>
+            </div>
+
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-danger" :disabled="modal.loading">
+              <span v-if="modal.loading" class="spinner-border spinner-border-sm me-1"></span>
+              {{ modal.isEdit ? 'Save Changes' : 'Add Channel' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div><!-- #app -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue@3.4.21/dist/vue.global.prod.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios@1.6.8/dist/axios.min.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>

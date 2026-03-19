@@ -1,0 +1,24 @@
+services:
+  channel-watcher:
+    build: .
+    container_name: metube-channel-watcher
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/data          # persistent SQLite database
+    environment:
+      - DATA_DIR=/data
+      # MeTube – uncomment to override the value stored in the UI/database
+      # - METUBE_URL=http://metube:8081
+      # - CHECK_INTERVAL=60
+      # Jellyfin – uncomment to enable (leave blank or omit to disable)
+      # - JELLYFIN_URL=http://jellyfin:8096
+      # - JELLYFIN_API_KEY=
+    # Optional: run on the same Docker network as MeTube / Jellyfin
+    # networks:
+    #   - media_network
+
+# networks:
+#   media_network:
+#     external: true
