@@ -214,6 +214,34 @@ The SQLite database is stored in the mounted volume and is preserved across upda
 
 ---
 
+## Releases
+
+Releases are published to [GitHub Releases](https://github.com/Spaggel/TubeChecker/releases) and the Docker image is tagged automatically.
+
+| Docker tag | Meaning |
+|---|---|
+| `latest` | Most recent build from `main` |
+| `1.2.3` | Exact version |
+| `1.2` | Latest patch of that minor version |
+
+**To cut a new release:**
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+This triggers the GitHub Actions workflow which:
+1. Builds and pushes `ghcr.io/spaggel/tubechecker:1.0.0`, `:1.0`, and `:latest`
+2. Creates a GitHub Release with auto-generated release notes from commits since the previous tag
+
+Use [semantic versioning](https://semver.org): `v1.0.0` → `vMAJOR.MINOR.PATCH`
+- **PATCH** — bug fixes
+- **MINOR** — new features, backwards compatible
+- **MAJOR** — breaking changes
+
+---
+
 ## Stack
 
 | Layer     | Technology                          |
