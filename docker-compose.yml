@@ -1,10 +1,10 @@
 services:
   channel-watcher:
     build: .
-    container_name: metube-channel-watcher
+    container_name: tube-checker
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "8083:8083"
     volumes:
       - ./data:/data          # persistent SQLite database
     environment:
