@@ -23,17 +23,17 @@
       <ul class="nav nav-pills">
         <li class="nav-item">
           <a class="nav-link" :class="{active: view==='channels'}" href="#" @click.prevent="switchView('channels')">
-            <i class="bi bi-collection-play me-1"></i>Channels
+            <i class="bi bi-collection-play"></i><span class="d-none d-sm-inline ms-1">Channels</span>
           </a>
         </li>
         <li class="nav-item">
           <a class="nav-link" :class="{active: view==='history'}" href="#" @click.prevent="switchView('history')">
-            <i class="bi bi-clock-history me-1"></i>History
+            <i class="bi bi-clock-history"></i><span class="d-none d-sm-inline ms-1">History</span>
           </a>
         </li>
         <li class="nav-item">
           <a class="nav-link" :class="{active: view==='settings'}" href="#" @click.prevent="switchView('settings')">
-            <i class="bi bi-gear me-1"></i>Settings
+            <i class="bi bi-gear"></i><span class="d-none d-sm-inline ms-1">Settings</span>
           </a>
         </li>
       </ul>
@@ -51,19 +51,19 @@
        VIEW: CHANNELS
   ══════════════════════════════════════════════════════════════ -->
   <main v-if="view==='channels'" class="container-lg py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <div>
+    <div class="page-header">
+      <div class="page-header-title">
         <h4 class="mb-0 fw-semibold">Channels</h4>
         <p class="text-secondary mb-0 small">{{ channels.length }} channel(s) configured</p>
       </div>
-      <div class="d-flex gap-2">
+      <div class="page-header-actions">
         <button class="btn btn-outline-secondary btn-sm" @click="checkAll" :disabled="checkingAll">
-          <i class="bi bi-arrow-repeat me-1"></i>Check All Now
+          <i class="bi bi-arrow-repeat me-1"></i><span class="d-none d-sm-inline">Check All Now</span><span class="d-sm-none">Check All</span>
         </button>
         <button v-if="settings.jellyfin_url" class="btn btn-outline-info btn-sm"
           @click="refreshJellyfin" :disabled="jellyfinRefreshing">
           <span v-if="jellyfinRefreshing" class="spinner-border spinner-border-sm me-1"></span>
-          <i v-else class="bi bi-collection-play-fill me-1"></i>Refresh Jellyfin
+          <i v-else class="bi bi-collection-play-fill me-1"></i><span class="d-none d-sm-inline">Refresh Jellyfin</span><span class="d-sm-none">Jellyfin</span>
         </button>
         <button class="btn btn-danger btn-sm" @click="openAddModal">
           <i class="bi bi-plus-lg me-1"></i>Add Channel
@@ -85,103 +85,152 @@
       </button>
     </div>
 
-    <!-- Channel table -->
-    <div v-else class="card border-0 shadow-sm">
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-          <thead class="table-header">
-            <tr>
-              <th>Channel</th>
-              <th>Start Date</th>
-              <th>Download Folder</th>
-              <th class="text-center">Videos Sent</th>
-              <th>Latest Video</th>
-              <th>Last Checked</th>
-              <th class="text-center">Status</th>
-              <th class="text-end">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="ch in channels" :key="ch.id">
-              <td>
-                <div class="fw-medium">
-                  <a :href="'https://www.youtube.com/channel/' + ch.channel_id"
-                     target="_blank" rel="noopener"
-                     class="text-decoration-none link-light">
-                    {{ ch.name }}
-                    <i class="bi bi-box-arrow-up-right ms-1 small text-secondary"></i>
-                  </a>
-                </div>
-                <div class="text-secondary small font-monospace">{{ ch.channel_id }}</div>
-              </td>
-              <td class="text-secondary small">
-                {{ ch.start_date ? formatDate(ch.start_date) : '—' }}
-              </td>
-              <td class="text-secondary small">
-                <span v-if="ch.download_dir" class="badge bg-secondary font-monospace">{{ ch.download_dir }}</span>
-                <span v-else class="text-secondary fst-italic">{{ ch.name }}</span>
-              </td>
-              <td class="text-center">
-                <span class="badge bg-primary rounded-pill">{{ ch.video_count }}</span>
-              </td>
-              <td class="text-secondary small">
-                {{ ch.latest_video_date ? formatDate(ch.latest_video_date) : '—' }}
-              </td>
-              <td class="text-secondary small">
-                {{ ch.last_checked ? formatRelative(ch.last_checked) : 'Never' }}
-              </td>
-              <td class="text-center">
-                <div class="form-check form-switch d-flex justify-content-center mb-0">
-                  <input class="form-check-input" type="checkbox" :checked="ch.enabled"
-                    @change="toggleEnabled(ch)" style="cursor:pointer">
-                </div>
-              </td>
-              <td class="text-end">
-                <div class="btn-group btn-group-sm">
-                  <button class="btn btn-outline-secondary" title="View Videos"
-                    @click="openChannelVideos(ch)">
-                    <i class="bi bi-collection-play"></i>
-                  </button>
-                  <button class="btn btn-outline-secondary" title="Check Now"
-                    @click="checkChannel(ch)" :disabled="ch._checking">
-                    <span v-if="ch._checking" class="spinner-border spinner-border-sm"></span>
-                    <i v-else class="bi bi-arrow-repeat"></i>
-                  </button>
-                  <button class="btn btn-outline-secondary" title="Edit" @click="openEditModal(ch)">
-                    <i class="bi bi-pencil"></i>
-                  </button>
-                  <button class="btn btn-outline-danger" title="Delete" @click="deleteChannel(ch)">
-                    <i class="bi bi-trash"></i>
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+    <template v-else>
+
+      <!-- ── Mobile: channel cards (hidden on md+) ────────── -->
+      <div class="d-md-none">
+        <div v-for="ch in channels" :key="ch.id" class="channel-card card border-0 shadow-sm mb-3">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div class="flex-grow-1 me-2 min-w-0">
+                <a :href="'https://www.youtube.com/channel/' + ch.channel_id"
+                   target="_blank" rel="noopener"
+                   class="text-decoration-none link-light fw-semibold d-block text-truncate">
+                  {{ ch.name }}
+                  <i class="bi bi-box-arrow-up-right ms-1 small text-secondary"></i>
+                </a>
+                <div class="text-secondary small font-monospace text-truncate">{{ ch.channel_id }}</div>
+              </div>
+              <div class="form-check form-switch mb-0 flex-shrink-0">
+                <input class="form-check-input" type="checkbox" :checked="ch.enabled"
+                  @change="toggleEnabled(ch)" style="cursor:pointer">
+              </div>
+            </div>
+            <div class="d-flex flex-wrap gap-3 mb-3 text-secondary small">
+              <span><i class="bi bi-collection-play me-1"></i>{{ ch.video_count }} sent</span>
+              <span><i class="bi bi-clock me-1"></i>{{ ch.last_checked ? formatRelative(ch.last_checked) : 'Never' }}</span>
+              <span v-if="ch.latest_video_date"><i class="bi bi-camera-video me-1"></i>{{ formatDate(ch.latest_video_date) }}</span>
+            </div>
+            <div class="d-flex gap-2">
+              <button class="btn btn-outline-secondary btn-sm flex-fill" title="View Videos" @click="openChannelVideos(ch)">
+                <i class="bi bi-collection-play me-1"></i>Videos
+              </button>
+              <button class="btn btn-outline-secondary btn-sm flex-fill" title="Check Now" @click="checkChannel(ch)" :disabled="ch._checking">
+                <span v-if="ch._checking" class="spinner-border spinner-border-sm"></span>
+                <template v-else><i class="bi bi-arrow-repeat me-1"></i>Check</template>
+              </button>
+              <button class="btn btn-outline-secondary btn-sm flex-fill" title="Edit" @click="openEditModal(ch)">
+                <i class="bi bi-pencil me-1"></i>Edit
+              </button>
+              <button class="btn btn-outline-danger btn-sm" title="Delete" @click="deleteChannel(ch)">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+
+      <!-- ── Desktop: channel table (hidden below md) ─────── -->
+      <div class="d-none d-md-block card border-0 shadow-sm">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-header">
+              <tr>
+                <th>Channel</th>
+                <th>Start Date</th>
+                <th>Download Folder</th>
+                <th class="text-center">Videos Sent</th>
+                <th>Latest Video</th>
+                <th>Last Checked</th>
+                <th class="text-center">Status</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="ch in channels" :key="ch.id">
+                <td>
+                  <div class="fw-medium">
+                    <a :href="'https://www.youtube.com/channel/' + ch.channel_id"
+                       target="_blank" rel="noopener"
+                       class="text-decoration-none link-light">
+                      {{ ch.name }}
+                      <i class="bi bi-box-arrow-up-right ms-1 small text-secondary"></i>
+                    </a>
+                  </div>
+                  <div class="text-secondary small font-monospace">{{ ch.channel_id }}</div>
+                </td>
+                <td class="text-secondary small">
+                  {{ ch.start_date ? formatDate(ch.start_date) : '—' }}
+                </td>
+                <td class="text-secondary small">
+                  <span v-if="ch.download_dir" class="badge bg-secondary font-monospace">{{ ch.download_dir }}</span>
+                  <span v-else class="text-secondary fst-italic">{{ ch.name }}</span>
+                </td>
+                <td class="text-center">
+                  <span class="badge bg-primary rounded-pill">{{ ch.video_count }}</span>
+                </td>
+                <td class="text-secondary small">
+                  {{ ch.latest_video_date ? formatDate(ch.latest_video_date) : '—' }}
+                </td>
+                <td class="text-secondary small">
+                  {{ ch.last_checked ? formatRelative(ch.last_checked) : 'Never' }}
+                </td>
+                <td class="text-center">
+                  <div class="form-check form-switch d-flex justify-content-center mb-0">
+                    <input class="form-check-input" type="checkbox" :checked="ch.enabled"
+                      @change="toggleEnabled(ch)" style="cursor:pointer">
+                  </div>
+                </td>
+                <td class="text-end">
+                  <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-secondary" title="View Videos"
+                      @click="openChannelVideos(ch)">
+                      <i class="bi bi-collection-play"></i>
+                    </button>
+                    <button class="btn btn-outline-secondary" title="Check Now"
+                      @click="checkChannel(ch)" :disabled="ch._checking">
+                      <span v-if="ch._checking" class="spinner-border spinner-border-sm"></span>
+                      <i v-else class="bi bi-arrow-repeat"></i>
+                    </button>
+                    <button class="btn btn-outline-secondary" title="Edit" @click="openEditModal(ch)">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-outline-danger" title="Delete" @click="deleteChannel(ch)">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </template>
   </main>
 
   <!-- ══════════════════════════════════════════════════════════
        VIEW: HISTORY
   ══════════════════════════════════════════════════════════════ -->
   <main v-if="view==='history'" class="container-lg py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <div>
+    <div class="page-header">
+      <div class="page-header-title">
         <h4 class="mb-0 fw-semibold">Download History</h4>
         <p class="text-secondary mb-0 small">Most recent {{ history.length }} entries</p>
       </div>
-      <button class="btn btn-outline-secondary btn-sm" @click="loadHistory">
-        <i class="bi bi-arrow-clockwise me-1"></i>Refresh
-      </button>
-      <button
-        v-if="failedCount > 0"
-        class="btn btn-outline-warning btn-sm"
-        @click="retryAllFailed"
-        :disabled="retryingAll">
-        <span v-if="retryingAll" class="spinner-border spinner-border-sm me-1"></span>
-        <i v-else class="bi bi-arrow-repeat me-1"></i>Retry All Failed ({{ failedCount }})
-      </button>
+      <div class="page-header-actions">
+        <button class="btn btn-outline-secondary btn-sm" @click="loadHistory">
+          <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+        </button>
+        <button
+          v-if="failedCount > 0"
+          class="btn btn-outline-warning btn-sm"
+          @click="retryAllFailed"
+          :disabled="retryingAll">
+          <span v-if="retryingAll" class="spinner-border spinner-border-sm me-1"></span>
+          <i v-else class="bi bi-arrow-repeat me-1"></i>Retry All Failed ({{ failedCount }})
+        </button>
+      </div>
     </div>
 
     <div v-if="loading.history" class="text-center py-5 text-secondary">
@@ -199,8 +248,8 @@
           <thead class="table-header">
             <tr>
               <th>Video</th>
-              <th>Channel</th>
-              <th>Published</th>
+              <th class="d-none d-md-table-cell">Channel</th>
+              <th class="d-none d-sm-table-cell">Published</th>
               <th>Dispatched</th>
               <th class="text-center">Status</th>
               <th class="text-end">Actions</th>
@@ -208,15 +257,16 @@
           </thead>
           <tbody>
             <tr v-for="v in history" :key="v.id">
-              <td>
+              <td class="mw-0">
                 <a :href="'https://www.youtube.com/watch?v=' + v.video_id" target="_blank"
-                   rel="noopener" class="text-decoration-none fw-medium link-light">
+                   rel="noopener" class="text-decoration-none fw-medium link-light video-title">
                   {{ v.title }}
                   <i class="bi bi-box-arrow-up-right ms-1 small text-secondary"></i>
                 </a>
+                <div class="text-secondary small d-md-none">{{ v.channel_name }}</div>
               </td>
-              <td class="text-secondary small">{{ v.channel_name }}</td>
-              <td class="text-secondary small">{{ formatDate(v.published_at) }}</td>
+              <td class="text-secondary small d-none d-md-table-cell">{{ v.channel_name }}</td>
+              <td class="text-secondary small d-none d-sm-table-cell">{{ formatDate(v.published_at) }}</td>
               <td class="text-secondary small">{{ formatRelative(v.sent_at) }}</td>
               <td class="text-center">
                 <span v-if="v.status === 'sent'" class="badge bg-success">sent</span>
@@ -253,12 +303,12 @@
   <main v-if="view==='channel-videos'" class="container-lg py-4">
 
     <!-- Header -->
-    <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
-      <button class="btn btn-outline-secondary btn-sm" @click="switchView('channels')">
+    <div class="page-header">
+      <button class="btn btn-outline-secondary btn-sm flex-shrink-0" @click="switchView('channels')">
         <i class="bi bi-arrow-left me-1"></i>Back
       </button>
-      <div class="flex-grow-1">
-        <h4 class="mb-0 fw-semibold">
+      <div class="page-header-title">
+        <h4 class="mb-0 fw-semibold text-truncate">
           <a :href="'https://www.youtube.com/channel/' + selectedChannel.channel_id"
              target="_blank" rel="noopener" class="text-decoration-none link-light">
             {{ selectedChannel.name }}
@@ -267,7 +317,7 @@
         </h4>
         <span class="text-secondary small font-monospace">{{ selectedChannel.channel_id }}</span>
       </div>
-      <div class="d-flex gap-2 flex-wrap">
+      <div class="page-header-actions">
         <button
           v-if="channelFailedCount > 0"
           class="btn btn-outline-warning btn-sm"
@@ -301,7 +351,7 @@
           <thead class="table-header">
             <tr>
               <th>Video</th>
-              <th>Published</th>
+              <th class="d-none d-sm-table-cell">Published</th>
               <th>Dispatched</th>
               <th class="text-center">Status</th>
               <th class="text-end">Actions</th>
@@ -309,14 +359,14 @@
           </thead>
           <tbody>
             <tr v-for="v in channelVideos" :key="v.id">
-              <td>
+              <td class="mw-0">
                 <a :href="'https://www.youtube.com/watch?v=' + v.video_id" target="_blank"
-                   rel="noopener" class="text-decoration-none fw-medium link-light">
+                   rel="noopener" class="text-decoration-none fw-medium link-light video-title">
                   {{ v.title }}
                   <i class="bi bi-box-arrow-up-right ms-1 small text-secondary"></i>
                 </a>
               </td>
-              <td class="text-secondary small">{{ formatDate(v.published_at) }}</td>
+              <td class="text-secondary small d-none d-sm-table-cell">{{ formatDate(v.published_at) }}</td>
               <td class="text-secondary small">{{ formatRelative(v.sent_at) }}</td>
               <td class="text-center">
                 <span v-if="v.status === 'sent'" class="badge bg-success">sent</span>
