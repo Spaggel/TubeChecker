@@ -4,6 +4,22 @@ A lightweight, self-hosted tool that watches YouTube channels via RSS, detects n
 
 Runs as a single Docker container with a built-in web UI. No external services, no message queues — just a SQLite database and a scheduler.
 
+## UI
+### Overview
+<img width="1135" height="531" alt="afbeelding" src="https://github.com/user-attachments/assets/4bc8e019-22b4-4e0a-90a5-4f5639fe4a42" />
+
+#### Channel settings
+<img width="527" height="664" alt="afbeelding" src="https://github.com/user-attachments/assets/e279e0bd-26ab-4de1-bd3e-6c513e784f7c" />
+
+#### Channel videos
+<img width="988" height="237" alt="afbeelding" src="https://github.com/user-attachments/assets/31480c48-6cb4-410b-a6d4-47f239b85719" />
+
+### Settings
+
+<img width="459" height="832" alt="afbeelding" src="https://github.com/user-attachments/assets/9b42a1d3-2693-4270-8679-c2fb34c6796c" />
+
+
+
 ## Features
 
 - Polls YouTube channel RSS feeds on a configurable interval
