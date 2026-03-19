@@ -1,8 +1,7 @@
 services:
   channel-watcher:
+    build: .
     image: ghcr.io/spaggel/tubechecker:latest
-    # To build from source instead, replace the image line above with:
-    # build: .
     container_name: tubechecker
     restart: unless-stopped
     ports:
