@@ -72,6 +72,64 @@ def create_channel(payload: schemas.ChannelCreate, db: Session = Depends(get_db)
     return out
 
 
+@router.get("/export")
+def export_channels(db: Session = Depends(get_db)):
+    """Return all channels as a JSON snapshot suitable for backup / migration."""
+    channels = db.query(models.Channel).order_by(models.Channel.name).all()
+    return {
+        "exported_at": datetime.utcnow().isoformat() + "Z",
+        "channels": [
+            schemas.ChannelExport(
+                channel_id=ch.channel_id,
+                name=ch.name,
+                start_date=ch.start_date,
+                download_dir=ch.download_dir,
+                quality=ch.quality,
+                format=ch.format,
+                enabled=ch.enabled,
+            )
+            for ch in channels
+        ],
+    }
+
+
+@router.post("/import", response_model=schemas.ChannelImportResult)
+def import_channels(payload: schemas.ChannelImportRequest, db: Session = Depends(get_db)):
+    """Add channels from a previous export. Channels that already exist are skipped (idempotent)."""
+    added = 0
+    skipped = 0
+    errors: list[str] = []
+
+    for ch_data in payload.channels:
+        existing = (
+            db.query(models.Channel)
+            .filter(models.Channel.channel_id == ch_data.channel_id)
+            .first()
+        )
+        if existing:
+            skipped += 1
+            continue
+
+        try:
+            channel = models.Channel(
+                channel_id=ch_data.channel_id,
+                name=ch_data.name,
+                start_date=ch_data.start_date,
+                download_dir=ch_data.download_dir,
+                quality=ch_data.quality,
+                format=ch_data.format,
+                enabled=ch_data.enabled,
+            )
+            db.add(channel)
+            db.commit()
+            added += 1
+        except Exception as exc:
+            db.rollback()
+            errors.append(f"{ch_data.channel_id}: {exc}")
+
+    return schemas.ChannelImportResult(added=added, skipped=skipped, errors=errors)
+
+
 @router.get("/{channel_id}", response_model=schemas.ChannelOut)
 def get_channel(channel_id: int, db: Session = Depends(get_db)):
     channel = db.query(models.Channel).filter(models.Channel.id == channel_id).first()

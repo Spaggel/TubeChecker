@@ -70,6 +70,14 @@
         <button class="btn btn-outline-secondary btn-sm" @click="checkAll" :disabled="checkingAll">
           <i class="bi bi-arrow-repeat me-1"></i><span class="d-none d-sm-inline">Check All Now</span><span class="d-sm-none">Check All</span>
         </button>
+        <button class="btn btn-outline-secondary btn-sm" @click="exportChannels" :disabled="!channels.length">
+          <i class="bi bi-download me-1"></i><span class="d-none d-sm-inline">Export</span>
+        </button>
+        <label class="btn btn-outline-secondary btn-sm mb-0" :class="{ disabled: importing }">
+          <span v-if="importing" class="spinner-border spinner-border-sm me-1"></span>
+          <i v-else class="bi bi-upload me-1"></i><span class="d-none d-sm-inline">Import</span>
+          <input type="file" accept=".json,application/json" class="d-none" @change="importChannels">
+        </label>
         <button v-if="settings.jellyfin_url" class="btn btn-outline-info btn-sm"
           @click="refreshJellyfin" :disabled="jellyfinRefreshing">
           <span v-if="jellyfinRefreshing" class="spinner-border spinner-border-sm me-1"></span>

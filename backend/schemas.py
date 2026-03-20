@@ -53,6 +53,26 @@ class VideoOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ChannelExport(BaseModel):
+    channel_id: str
+    name: str
+    start_date: Optional[datetime] = None
+    download_dir: Optional[str] = None
+    quality: str = "best"
+    format: str = "any"
+    enabled: bool = True
+
+
+class ChannelImportRequest(BaseModel):
+    channels: List[ChannelExport]
+
+
+class ChannelImportResult(BaseModel):
+    added: int
+    skipped: int
+    errors: List[str] = []
+
+
 class SettingsOut(BaseModel):
     metube_url: str
     check_interval: int

@@ -31,6 +31,7 @@ createApp({
       retryingAll: false,
       retryingAllChannel: false,
       jellyfinRefreshing: false,
+      importing: false,
 
       // Channel videos view
       selectedChannel: null,
@@ -539,6 +540,55 @@ createApp({
       } finally {
         this.jellyfinRefreshing = false;
       }
+    },
+
+    /* ── Export / Import ────────────────────────────────── */
+    async exportChannels() {
+      try {
+        const { data } = await api.get('/channels/export');
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'channels-export.json';
+        a.click();
+        URL.revokeObjectURL(url);
+      } catch {
+        this.showAlert('Failed to export channels', 'danger');
+      }
+    },
+
+    importChannels(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        this.importing = true;
+        try {
+          const parsed = JSON.parse(e.target.result);
+          // Accept either a plain array or the full export object { channels: [...] }
+          const payload = Array.isArray(parsed) ? { channels: parsed } : parsed;
+          const { data: result } = await api.post('/channels/import', payload);
+          const { added, skipped, errors } = result;
+          if (errors.length > 0) {
+            this.showAlert(
+              `Import done: ${added} added, ${skipped} skipped, ${errors.length} error(s)`,
+              'warning'
+            );
+          } else {
+            this.showAlert(`Import done: ${added} added, ${skipped} already existed`);
+          }
+          if (added > 0) await this.loadChannels();
+        } catch (err) {
+          const msg = err.response?.data?.detail || 'Failed to import channels';
+          this.showAlert(msg, 'danger');
+        } finally {
+          this.importing = false;
+          // Reset so the same file can be re-selected next time
+          event.target.value = '';
+        }
+      };
+      reader.readAsText(file);
     },
   },
 }).mount('#app');
