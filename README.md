@@ -2,7 +2,7 @@
 
 A lightweight, self-hosted tool that watches YouTube channels via RSS, detects new videos, and automatically dispatches them to a [MeTube](https://github.com/alexta69/metube) instance for downloading. Optionally triggers a Jellyfin library refresh after new videos are queued.
 
-Runs as a single Docker container with a built-in web UI. No external services, no message queues — just a SQLite database and a scheduler.
+Runs as a single Docker container with a built-in web UI. No external services or databases to manage.
 
 ## UI
 ### Overview
@@ -25,9 +25,11 @@ Runs as a single Docker container with a built-in web UI. No external services, 
 - Polls YouTube channel RSS feeds on a configurable interval
 - Resolves channels from a `@handle`, full URL, or bare `UC…` channel ID
 - Filters by start date — only downloads videos published on or after a given date
-- Per-channel download folder configuration
+- Per-channel download folder, format, and quality configuration
 - Download history with status tracking (`sent` / `failed`)
+- Automatic retry of failed downloads with backoff (5 → 15 → 60 min), skipped when MeTube is unreachable
 - Retry failed downloads individually or in bulk
+- Export and import your channel list for backup or migration
 - Optional Jellyfin library refresh after new videos are queued
 
 ## Requirements
@@ -165,7 +167,7 @@ All settings can be configured from the **Settings** view in the UI and are pers
 
 | Environment Variable | Default                    | Description                                              |
 |----------------------|----------------------------|----------------------------------------------------------|
-| `DATA_DIR`           | `/data`                    | Directory where the SQLite database is stored            |
+| `DATA_DIR`           | `/data`                    | Directory where application data is stored               |
 | `METUBE_URL`         | `http://localhost:8081`    | Base URL of your MeTube instance (no trailing slash)     |
 | `CHECK_INTERVAL`     | `60`                       | How often to poll RSS feeds, in minutes                  |
 | `JELLYFIN_URL`       | *(empty)*                  | Base URL of your Jellyfin instance — leave empty to disable |
@@ -203,6 +205,11 @@ All settings can be configured from the **Settings** view in the UI and are pers
 - Click the playlist icon on any channel row to open that channel's video history.
 - The same retry controls are available scoped to just that channel.
 
+### Importing and exporting channels
+
+- Click **Export** on the Channels page to download a JSON snapshot of all your configured channels.
+- Click **Import** and select a previously exported file to restore channels on a new instance. Channels that already exist are skipped, so importing is safe to run more than once.
+
 ### Jellyfin integration
 
 1. In **Settings**, enter your Jellyfin URL and API key.
@@ -226,5 +233,5 @@ git -C /path/to/TubeChecker pull
 docker compose up -d --build tubechecker
 ```
 
-The SQLite database is stored in the mounted volume and is preserved across updates.
+All application data is stored in the mounted volume and is preserved across updates.
 
