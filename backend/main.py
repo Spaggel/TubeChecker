@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .database import init_db, SessionLocal
 from . import models
-from .routers import channels, settings as settings_router, videos
+from .routers import channels, settings as settings_router, videos, health as health_router
 from . import scheduler as sched_module
 
 logging.basicConfig(
@@ -69,6 +69,7 @@ app = FastAPI(
 app.include_router(channels.router)
 app.include_router(settings_router.router)
 app.include_router(videos.router)
+app.include_router(health_router.router)
 
 # --- Frontend static files ---
 # Mounted last so API routes take precedence

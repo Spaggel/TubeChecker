@@ -43,6 +43,10 @@ createApp({
       alert: null,
       _alertTimer: null,
 
+      // MeTube health
+      metubeStatus: { ok: null, checked_at: null },
+      _statusPollTimer: null,
+
       // Add/Edit modal state
       modal: {
         instance: null,   // Bootstrap Modal instance
@@ -68,6 +72,19 @@ createApp({
     channelFailedCount() {
       return this.channelVideos.filter(v => v.status === 'failed').length;
     },
+    metubeStatusClass() {
+      if (this.metubeStatus.ok === null) return 'unknown';
+      return this.metubeStatus.ok ? 'ok' : 'error';
+    },
+    metubeStatusTooltip() {
+      if (this.metubeStatus.ok === null) return 'MeTube: checking…';
+      const when = this.metubeStatus.checked_at
+        ? ` (${this.formatRelative(this.metubeStatus.checked_at)})`
+        : '';
+      return this.metubeStatus.ok
+        ? `MeTube: reachable${when}`
+        : `MeTube: unreachable${when}`;
+    },
   },
 
   // ── Lifecycle ─────────────────────────────────────────────
@@ -76,6 +93,17 @@ createApp({
     this.loadSettings();
     // Initialise Bootstrap modal
     this.modal.instance = new bootstrap.Modal(this.$refs.channelModalEl);
+    // MeTube status dot tooltip — title is a live function so content is
+    // always current when the tooltip is displayed
+    this.$nextTick(() => {
+      this._statusTooltip = new bootstrap.Tooltip(this.$refs.statusDot, {
+        title: () => this.metubeStatusTooltip,
+        placement: 'bottom',
+      });
+    });
+    // Initial health fetch + poll every 60 s
+    this.loadMetubeStatus();
+    this._statusPollTimer = setInterval(() => this.loadMetubeStatus(), 60_000);
     // Hash-based routing: back/forward buttons
     window.addEventListener('hashchange', () => {
       if (this._pendingRoute) { this._pendingRoute = false; return; }
@@ -87,6 +115,16 @@ createApp({
 
   // ── Methods ───────────────────────────────────────────────
   methods: {
+
+    /* ── MeTube health ──────────────────────────────────── */
+    async loadMetubeStatus() {
+      try {
+        const { data } = await api.get('/health/metube');
+        this.metubeStatus = data;
+      } catch {
+        // Silently ignore — dot stays in its last-known state
+      }
+    },
 
     /* ── Navigation ─────────────────────────────────────── */
 

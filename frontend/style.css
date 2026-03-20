@@ -85,6 +85,26 @@
 /* ── Misc ─────────────────────────────────────────────────── */
 .font-monospace { font-family: var(--bs-font-monospace); }
 
+/* ── MeTube status dot ────────────────────────────────────── */
+.status-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  cursor: default;
+  background: var(--bs-secondary-color);   /* unknown / grey */
+}
+.status-dot.ok    { background: #198754; animation: status-pulse 2.5s infinite; }
+.status-dot.error { background: #dc3545; }
+
+@keyframes status-pulse {
+  0%   { box-shadow: 0 0 0 0   rgba(25, 135, 84, 0.55); }
+  70%  { box-shadow: 0 0 0 6px rgba(25, 135, 84, 0);    }
+  100% { box-shadow: 0 0 0 0   rgba(25, 135, 84, 0);    }
+}
+
+
 .nav-pills .nav-link { color: var(--bs-secondary-color); }
 .nav-pills .nav-link.active { color: #fff; background-color: var(--bs-danger); }
 .nav-pills .nav-link:hover:not(.active) { color: var(--bs-body-color); background: var(--bs-secondary-bg); }

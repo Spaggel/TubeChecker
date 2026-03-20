@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime, timezone
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
@@ -6,10 +7,22 @@ from apscheduler.triggers.interval import IntervalTrigger
 from .database import SessionLocal
 from . import models
 from .feed_checker import check_channel
+from . import health as health_module
 
 logger = logging.getLogger(__name__)
 
 _scheduler = BackgroundScheduler(timezone="UTC")
+
+
+def _run_health_check() -> None:
+    """Check MeTube reachability and update in-memory state."""
+    db = SessionLocal()
+    try:
+        setting = db.query(models.Setting).filter(models.Setting.key == "metube_url").first()
+        metube_url = setting.value if setting else "http://localhost:8081"
+        health_module.run_health_check(metube_url)
+    finally:
+        db.close()
 
 
 def _run_all_checks() -> None:
@@ -38,6 +51,13 @@ def start_scheduler(interval_minutes: int = 60) -> None:
         trigger=IntervalTrigger(minutes=interval_minutes),
         id="check_channels",
         replace_existing=True,
+    )
+    _scheduler.add_job(
+        _run_health_check,
+        trigger=IntervalTrigger(seconds=60),
+        id="health_check",
+        replace_existing=True,
+        next_run_time=datetime.now(timezone.utc),  # run immediately on startup
     )
     if not _scheduler.running:
         _scheduler.start()

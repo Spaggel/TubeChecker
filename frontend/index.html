@@ -20,6 +20,11 @@
       <span v-if="checkingAll" class="text-secondary small me-2">
         <span class="spinner-border spinner-border-sm me-1"></span>Checking…
       </span>
+      <span class="status-dot"
+            :class="metubeStatusClass"
+            ref="statusDot"
+            data-bs-toggle="tooltip"
+            data-bs-placement="bottom"></span>
       <ul class="nav nav-pills">
         <li class="nav-item">
           <a class="nav-link" :class="{active: view==='channels'}" href="#" @click.prevent="switchView('channels')">
@@ -34,6 +39,11 @@
         <li class="nav-item">
           <a class="nav-link" :class="{active: view==='settings'}" href="#" @click.prevent="switchView('settings')">
             <i class="bi bi-gear"></i><span class="d-none d-sm-inline ms-1">Settings</span>
+          </a>
+        </li>
+        <li class="nav-item" v-if="settings.metube_url">
+          <a class="nav-link" :href="settings.metube_url" target="_blank" rel="noopener" title="Open MeTube">
+            <i class="bi bi-box-arrow-up-right"></i><span class="d-none d-sm-inline ms-1">MeTube</span>
           </a>
         </li>
       </ul>
