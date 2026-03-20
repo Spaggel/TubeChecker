@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from .. import models, schemas
 from ..database import get_db
-from ..feed_checker import send_to_metube
+from ..feed_checker import send_to_metube, RETRY_DELAYS_MINUTES
 from ..routers.settings import DEFAULT_SETTINGS
 
 router = APIRouter(prefix="/api/videos", tags=["videos"])
@@ -55,6 +55,12 @@ def retry_all_failed(db: Session = Depends(get_db)):
         video.status = "sent" if success else "failed"
         video.error = error_msg
         video.sent_at = datetime.utcnow()
+        if success:
+            video.retry_count = 0
+            video.next_retry_at = None
+        else:
+            video.retry_count = 0
+            video.next_retry_at = datetime.utcnow() + timedelta(minutes=RETRY_DELAYS_MINUTES[0])
 
         out = schemas.VideoOut.model_validate(video)
         out.channel_name = channel.name
@@ -84,6 +90,12 @@ def retry_video(video_id: int, db: Session = Depends(get_db)):
     video.status = "sent" if success else "failed"
     video.error = error_msg
     video.sent_at = datetime.utcnow()
+    if success:
+        video.retry_count = 0
+        video.next_retry_at = None
+    else:
+        video.retry_count = 0
+        video.next_retry_at = datetime.utcnow() + timedelta(minutes=RETRY_DELAYS_MINUTES[0])
     db.commit()
     db.refresh(video)
 

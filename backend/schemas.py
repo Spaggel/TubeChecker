@@ -49,6 +49,8 @@ class VideoOut(BaseModel):
     status: str
     error: Optional[str] = None
     channel_name: Optional[str] = None
+    retry_count: int = 0
+    next_retry_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
 

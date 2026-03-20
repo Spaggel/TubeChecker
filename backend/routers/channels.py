@@ -6,8 +6,9 @@ from sqlalchemy.orm import Session
 
 from .. import models, schemas
 from ..database import SessionLocal, get_db
-from ..feed_checker import check_channel, fetch_channel_info, resolve_channel_input, send_to_metube
-from datetime import datetime
+from datetime import datetime, timedelta
+
+from ..feed_checker import check_channel, fetch_channel_info, resolve_channel_input, send_to_metube, RETRY_DELAYS_MINUTES
 
 router = APIRouter(prefix="/api/channels", tags=["channels"])
 
@@ -236,6 +237,12 @@ def retry_failed_for_channel(channel_id: int, db: Session = Depends(get_db)):
         video.status = "sent" if success else "failed"
         video.error = error_msg
         video.sent_at = datetime.utcnow()
+        if success:
+            video.retry_count = 0
+            video.next_retry_at = None
+        else:
+            video.retry_count = 0
+            video.next_retry_at = datetime.utcnow() + timedelta(minutes=RETRY_DELAYS_MINUTES[0])
 
         out = schemas.VideoOut.model_validate(video)
         out.channel_name = channel.name

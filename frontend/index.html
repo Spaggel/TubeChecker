@@ -288,14 +288,34 @@
               <td class="text-secondary small">{{ formatRelative(v.sent_at) }}</td>
               <td class="text-center">
                 <span v-if="v.status === 'sent'" class="badge bg-success">sent</span>
-                <span v-else
-                  class="badge bg-danger"
-                  :title="v.error || 'Unknown error'"
-                  data-bs-toggle="tooltip"
-                  data-bs-placement="left"
-                  style="cursor:help">
-                  failed <i class="bi bi-info-circle ms-1"></i>
-                </span>
+                <template v-else>
+                  <span
+                    class="badge bg-danger"
+                    :title="v.error || 'Unknown error'"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="left"
+                    style="cursor:help">
+                    failed <i class="bi bi-info-circle ms-1"></i>
+                  </span>
+                  <div v-if="v.next_retry_at" class="mt-1">
+                    <span class="badge bg-secondary"
+                      :title="'Auto-retry ' + (v.retry_count + 1) + '/3 scheduled'"
+                      data-bs-toggle="tooltip"
+                      data-bs-placement="left"
+                      style="cursor:default; font-size:.7em">
+                      <i class="bi bi-clock me-1"></i>{{ formatRelative(v.next_retry_at) }}
+                    </span>
+                  </div>
+                  <div v-else-if="v.retry_count > 0" class="mt-1">
+                    <span class="badge bg-dark text-secondary border border-secondary"
+                      :title="'Auto-retried ' + v.retry_count + '/3 — no more auto-retries'"
+                      data-bs-toggle="tooltip"
+                      data-bs-placement="left"
+                      style="cursor:default; font-size:.7em">
+                      retried {{ v.retry_count }}/3
+                    </span>
+                  </div>
+                </template>
               </td>
               <td class="text-end">
                 <button
@@ -388,14 +408,34 @@
               <td class="text-secondary small">{{ formatRelative(v.sent_at) }}</td>
               <td class="text-center">
                 <span v-if="v.status === 'sent'" class="badge bg-success">sent</span>
-                <span v-else
-                  class="badge bg-danger"
-                  :title="v.error || 'Unknown error'"
-                  data-bs-toggle="tooltip"
-                  data-bs-placement="left"
-                  style="cursor:help">
-                  failed <i class="bi bi-info-circle ms-1"></i>
-                </span>
+                <template v-else>
+                  <span
+                    class="badge bg-danger"
+                    :title="v.error || 'Unknown error'"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="left"
+                    style="cursor:help">
+                    failed <i class="bi bi-info-circle ms-1"></i>
+                  </span>
+                  <div v-if="v.next_retry_at" class="mt-1">
+                    <span class="badge bg-secondary"
+                      :title="'Auto-retry ' + (v.retry_count + 1) + '/3 scheduled'"
+                      data-bs-toggle="tooltip"
+                      data-bs-placement="left"
+                      style="cursor:default; font-size:.7em">
+                      <i class="bi bi-clock me-1"></i>{{ formatRelative(v.next_retry_at) }}
+                    </span>
+                  </div>
+                  <div v-else-if="v.retry_count > 0" class="mt-1">
+                    <span class="badge bg-dark text-secondary border border-secondary"
+                      :title="'Auto-retried ' + v.retry_count + '/3 — no more auto-retries'"
+                      data-bs-toggle="tooltip"
+                      data-bs-placement="left"
+                      style="cursor:default; font-size:.7em">
+                      retried {{ v.retry_count }}/3
+                    </span>
+                  </div>
+                </template>
               </td>
               <td class="text-end">
                 <button

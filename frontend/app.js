@@ -238,6 +238,14 @@ createApp({
     formatRelative(iso) {
       if (!iso) return '—';
       const diff = Math.floor((Date.now() - this._toUTC(iso)) / 1000);
+      if (diff < 0) {
+        // Future time (e.g. next_retry_at)
+        const abs = -diff;
+        if (abs < 60)    return `in ${abs}s`;
+        if (abs < 3600)  return `in ${Math.floor(abs / 60)}m`;
+        if (abs < 86400) return `in ${Math.floor(abs / 3600)}h`;
+        return `in ${Math.floor(abs / 86400)}d`;
+      }
       if (diff < 60)   return `${diff}s ago`;
       if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
       if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;

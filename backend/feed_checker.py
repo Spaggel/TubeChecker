@@ -1,18 +1,22 @@
 import logging
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Tuple
 
 import feedparser
 import httpx
 from sqlalchemy.orm import Session
 
+from . import health as health_module
 from . import models
 
 logger = logging.getLogger(__name__)
 
 YOUTUBE_FEED_URL = "https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
 _CHANNEL_ID_RE = re.compile(r"UC[A-Za-z0-9_-]{22}")
+
+# Minutes to wait before each successive auto-retry (index = retries already done)
+RETRY_DELAYS_MINUTES = [5, 15, 60]
 
 
 def resolve_channel_input(raw: str) -> Optional[str]:
@@ -162,6 +166,11 @@ def check_channel(db: Session, channel: models.Channel, metube_url: str) -> int:
                 published_at=published_at,
                 status=status,
                 error=error_msg,
+                # Schedule the first auto-retry if the initial send failed
+                next_retry_at=(
+                    datetime.utcnow() + timedelta(minutes=RETRY_DELAYS_MINUTES[0])
+                    if not success else None
+                ),
             )
         )
         new_count += 1
@@ -174,6 +183,80 @@ def check_channel(db: Session, channel: models.Channel, metube_url: str) -> int:
         logger.info("Channel %s: dispatched %d new video(s)", channel.name, new_count)
 
     return new_count
+
+
+def auto_retry_failed(db: Session, metube_url: str) -> int:
+    """
+    Attempt to re-send failed videos whose backoff delay has elapsed.
+
+    Checks up to 3 times with exponential backoff (5 → 15 → 60 min).
+    Silently skips when MeTube is not reachable.
+    Returns the number of videos that were retried (success or fail).
+    """
+    if not health_module.get_status().get("ok"):
+        logger.debug("Auto-retry skipped: MeTube is not reachable")
+        return 0
+
+    now = datetime.utcnow()
+
+    pending = (
+        db.query(models.Video)
+        .filter(
+            models.Video.status == "failed",
+            models.Video.retry_count < 3,
+            models.Video.next_retry_at.isnot(None),
+            models.Video.next_retry_at <= now,
+        )
+        .all()
+    )
+
+    if not pending:
+        return 0
+
+    retried = 0
+    for video in pending:
+        channel = video.channel
+        if not channel or not channel.enabled:
+            continue
+
+        video_url = f"https://www.youtube.com/watch?v={video.video_id}"
+        folder = channel.download_dir or channel.name
+        success, error_msg = send_to_metube(
+            metube_url, video_url, str(folder),
+            str(channel.quality or "best"), str(channel.format or "any"),
+        )
+
+        new_count = video.retry_count + 1
+        video.retry_count = new_count
+        video.sent_at = now
+
+        if success:
+            video.status = "sent"
+            video.error = None
+            video.next_retry_at = None
+            logger.info(
+                "[AUTO-RETRY %d/3 OK] %s — %s", new_count, channel.name, video.title
+            )
+        else:
+            video.error = error_msg
+            if new_count < 3:
+                delay = RETRY_DELAYS_MINUTES[new_count]
+                video.next_retry_at = now + timedelta(minutes=delay)
+                logger.warning(
+                    "[AUTO-RETRY %d/3 FAILED] %s — %s — next in %d min",
+                    new_count, channel.name, video.title, delay,
+                )
+            else:
+                video.next_retry_at = None  # exhausted — requires manual retry
+                logger.warning(
+                    "[AUTO-RETRY EXHAUSTED] %s — %s — manual retry required",
+                    channel.name, video.title,
+                )
+
+        retried += 1
+
+    db.commit()
+    return retried
 
 
 def refresh_jellyfin(jellyfin_url: str, api_key: str) -> Tuple[bool, Optional[str]]:

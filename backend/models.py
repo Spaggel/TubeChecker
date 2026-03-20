@@ -32,6 +32,8 @@ class Video(Base):
     sent_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     status = Column(String, default="sent", nullable=False)  # sent | failed
     error = Column(Text, nullable=True)
+    retry_count = Column(Integer, default=0, nullable=False)      # auto-retries completed
+    next_retry_at = Column(DateTime, nullable=True)               # None = no pending auto-retry
 
     channel = relationship("Channel", back_populates="videos")
 

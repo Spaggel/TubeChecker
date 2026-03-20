@@ -6,7 +6,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 
 from .database import SessionLocal
 from . import models
-from .feed_checker import check_channel
+from .feed_checker import auto_retry_failed, check_channel
 from . import health as health_module
 
 logger = logging.getLogger(__name__)
@@ -15,12 +15,16 @@ _scheduler = BackgroundScheduler(timezone="UTC")
 
 
 def _run_health_check() -> None:
-    """Check MeTube reachability and update in-memory state."""
+    """Check MeTube reachability, update in-memory state, then auto-retry failed videos."""
     db = SessionLocal()
     try:
         setting = db.query(models.Setting).filter(models.Setting.key == "metube_url").first()
         metube_url = setting.value if setting else "http://localhost:8081"
+        # Run the live health check first so the state is fresh when auto_retry_failed reads it
         health_module.run_health_check(metube_url)
+        count = auto_retry_failed(db, metube_url)
+        if count:
+            logger.info("Auto-retry: processed %d video(s)", count)
     finally:
         db.close()
 
