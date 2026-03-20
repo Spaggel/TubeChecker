@@ -59,6 +59,8 @@ createApp({
         name: '',
         start_date: '',
         download_dir: '',
+        quality: 'best',
+        format: 'any',
         enabled: true,
       },
     };
@@ -84,6 +86,38 @@ createApp({
       return this.metubeStatus.ok
         ? `MeTube: reachable${when}`
         : `MeTube: unreachable${when}`;
+    },
+    availableQualityOptions() {
+      const AUDIO_QUALITY = {
+        mp3:  [{ value: 'best', label: 'Best available' }, { value: '320', label: '320 kbps' }, { value: '192', label: '192 kbps' }, { value: '128', label: '128 kbps' }],
+        m4a:  [{ value: 'best', label: 'Best available' }, { value: '192', label: '192 kbps' }, { value: '128', label: '128 kbps' }],
+        opus: [{ value: 'best', label: 'Best available' }],
+        wav:  [{ value: 'best', label: 'Best available' }],
+        flac: [{ value: 'best', label: 'Best available' }],
+      };
+      const VIDEO_QUALITY = [
+        { value: 'best',  label: 'Best available' },
+        { value: '2160',  label: '4K (2160p)' },
+        { value: '1440',  label: '1440p' },
+        { value: '1080',  label: '1080p' },
+        { value: '720',   label: '720p' },
+        { value: '480',   label: '480p' },
+        { value: '360',   label: '360p' },
+        { value: '240',   label: '240p' },
+        { value: 'worst', label: 'Worst available' },
+      ];
+      return AUDIO_QUALITY[this.form.format] || VIDEO_QUALITY;
+    },
+  },
+
+  // ── Watch ──────────────────────────────────────────────────
+  watch: {
+    'form.format'(newFmt) {
+      // Reset quality to 'best' if the current value is not valid for the new format
+      const opts = this.availableQualityOptions;
+      if (!opts.find(o => o.value === this.form.quality)) {
+        this.form.quality = 'best';
+      }
     },
   },
 
@@ -226,7 +260,7 @@ createApp({
     openAddModal() {
       this.modal.isEdit = false;
       this.modal.editId = null;
-      this.form = { channel_id: '', name: '', start_date: '', download_dir: '', enabled: true };
+      this.form = { channel_id: '', name: '', start_date: '', download_dir: '', quality: 'best', format: 'any', enabled: true };
       this.modal.instance.show();
     },
 
@@ -238,6 +272,8 @@ createApp({
         name: ch.name,
         start_date: ch.start_date ? ch.start_date.slice(0, 10) : '',
         download_dir: ch.download_dir || '',
+        quality: ch.quality || 'best',
+        format: ch.format || 'any',
         enabled: ch.enabled,
       };
       this.modal.instance.show();
@@ -253,6 +289,8 @@ createApp({
             ? new Date(this.form.start_date).toISOString()
             : null,
           download_dir: this.form.download_dir || null,
+          quality: this.form.quality || 'best',
+          format: this.form.format || 'any',
           enabled: this.form.enabled,
         };
 

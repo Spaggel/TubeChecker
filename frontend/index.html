@@ -537,6 +537,33 @@
               <div class="form-text">Subfolder inside MeTube's download directory. Defaults to the channel name.</div>
             </div>
 
+            <div class="mb-3">
+              <label class="form-label fw-medium">Format</label>
+              <select v-model="form.format" class="form-select">
+                <optgroup label="Video">
+                  <option value="any">Any (default)</option>
+                  <option value="mp4">MP4</option>
+                  <option value="ios">iOS (MP4 compatible)</option>
+                </optgroup>
+                <optgroup label="Audio">
+                  <option value="mp3">MP3</option>
+                  <option value="m4a">M4A</option>
+                  <option value="opus">Opus</option>
+                  <option value="wav">WAV</option>
+                  <option value="flac">FLAC</option>
+                </optgroup>
+              </select>
+              <div class="form-text">Download format sent to MeTube. Audio formats extract audio only.</div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-medium">Quality</label>
+              <select v-model="form.quality" class="form-select">
+                <option v-for="opt in availableQualityOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+              </select>
+              <div class="form-text">Preferred quality sent to MeTube.</div>
+            </div>
+
             <div class="form-check form-switch">
               <input v-model="form.enabled" class="form-check-input" type="checkbox" id="enabledSwitch" />
               <label class="form-check-label fw-medium" for="enabledSwitch">Enabled</label>

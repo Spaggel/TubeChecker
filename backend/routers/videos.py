@@ -50,7 +50,7 @@ def retry_all_failed(db: Session = Depends(get_db)):
 
         video_url = f"https://www.youtube.com/watch?v={video.video_id}"
         folder = channel.download_dir or channel.name
-        success, error_msg = send_to_metube(metube_url, video_url, folder)
+        success, error_msg = send_to_metube(metube_url, video_url, folder, channel.quality or "best", channel.format or "any")
 
         video.status = "sent" if success else "failed"
         video.error = error_msg
@@ -79,7 +79,7 @@ def retry_video(video_id: int, db: Session = Depends(get_db)):
 
     video_url = f"https://www.youtube.com/watch?v={video.video_id}"
     folder = channel.download_dir or channel.name
-    success, error_msg = send_to_metube(metube_url, video_url, folder)
+    success, error_msg = send_to_metube(metube_url, video_url, folder, channel.quality or "best", channel.format or "any")
 
     video.status = "sent" if success else "failed"
     video.error = error_msg

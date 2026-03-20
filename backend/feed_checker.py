@@ -149,7 +149,9 @@ def check_channel(db: Session, channel: models.Channel, metube_url: str) -> int:
         # Send to MeTube
         video_url = f"https://www.youtube.com/watch?v={video_id}"
         folder = channel.download_dir or channel.name
-        success, error_msg = send_to_metube(metube_url, video_url, folder)
+        quality = channel.quality or "best"
+        fmt = channel.format or "any"
+        success, error_msg = send_to_metube(metube_url, video_url, folder, quality, fmt)
         status = "sent" if success else "failed"
 
         db.add(
@@ -192,20 +194,41 @@ def refresh_jellyfin(jellyfin_url: str, api_key: str) -> Tuple[bool, Optional[st
         return False, str(exc)
 
 
-def send_to_metube(metube_url: str, video_url: str, folder: str) -> Tuple[bool, Optional[str]]:
+def send_to_metube(metube_url: str, video_url: str, folder: str, quality: str = "best", fmt: str = "any") -> Tuple[bool, Optional[str]]:
     """POST a download request to the MeTube /add endpoint.
+
+    Derives ``download_type`` from ``fmt`` automatically.
+    Coerces ``quality`` to ``"best"`` when the chosen audio format does not
+    support the stored quality value.
 
     Returns ``(True, None)`` on success or ``(False, error_message)`` on failure.
     """
+    _AUDIO_FORMATS = {"m4a", "mp3", "opus", "wav", "flac"}
+    _AUDIO_QUALITY = {
+        "mp3":  {"best", "320", "192", "128"},
+        "m4a":  {"best", "192", "128"},
+        "opus": {"best"},
+        "wav":  {"best"},
+        "flac": {"best"},
+    }
+
+    if fmt in _AUDIO_FORMATS:
+        download_type = "audio"
+        valid_qualities = _AUDIO_QUALITY.get(fmt, {"best"})
+        if quality not in valid_qualities:
+            quality = "best"
+    else:
+        download_type = "video"
+
     try:
         with httpx.Client(timeout=10.0) as client:
             resp = client.post(
                 f"{metube_url.rstrip('/')}/add",
                 json={
                     "url": video_url,
-                    "download_type": "video",
-                    "quality": "best",
-                    "format": "any",
+                    "download_type": download_type,
+                    "quality": quality,
+                    "format": fmt,
                     "folder": folder,
                 },
             )

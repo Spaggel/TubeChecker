@@ -8,6 +8,8 @@ class ChannelCreate(BaseModel):
     name: Optional[str] = None
     start_date: Optional[datetime] = None
     download_dir: Optional[str] = None
+    quality: str = "best"
+    format: str = "any"
     enabled: bool = True
 
 
@@ -15,6 +17,8 @@ class ChannelUpdate(BaseModel):
     name: Optional[str] = None
     start_date: Optional[datetime] = None
     download_dir: Optional[str] = None
+    quality: Optional[str] = None
+    format: Optional[str] = None
     enabled: Optional[bool] = None
 
 
@@ -24,6 +28,8 @@ class ChannelOut(BaseModel):
     name: str
     start_date: Optional[datetime] = None
     download_dir: Optional[str] = None
+    quality: str = "best"
+    format: str = "any"
     enabled: bool
     last_checked: Optional[datetime] = None
     created_at: datetime

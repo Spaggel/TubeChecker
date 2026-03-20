@@ -32,6 +32,8 @@ def init_db() -> None:
     # SQLite doesn't support ALTER TABLE ADD COLUMN IF NOT EXISTS, so guard with
     # a pragma check and swallow the error if the column already exists.
     _ensure_column("videos", "error", "TEXT")
+    _ensure_column("channels", "quality", "VARCHAR DEFAULT 'best'")
+    _ensure_column("channels", "format", "VARCHAR DEFAULT 'any'")
 
 
 def _ensure_column(table: str, column: str, col_type: str) -> None:

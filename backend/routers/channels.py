@@ -59,6 +59,8 @@ def create_channel(payload: schemas.ChannelCreate, db: Session = Depends(get_db)
         name=name,
         start_date=payload.start_date,
         download_dir=payload.download_dir,
+        quality=payload.quality,
+        format=payload.format,
         enabled=payload.enabled,
     )
     db.add(channel)
@@ -171,7 +173,7 @@ def retry_failed_for_channel(channel_id: int, db: Session = Depends(get_db)):
     for video in failed:
         video_url = f"https://www.youtube.com/watch?v={video.video_id}"
         folder = channel.download_dir or channel.name
-        success, error_msg = send_to_metube(metube_url, video_url, folder)
+        success, error_msg = send_to_metube(metube_url, video_url, folder, channel.quality or "best", channel.format or "any")
 
         video.status = "sent" if success else "failed"
         video.error = error_msg
