@@ -67,25 +67,67 @@
         <p class="text-secondary mb-0 small">{{ channels.length }} channel(s) configured</p>
       </div>
       <div class="page-header-actions">
-        <button class="btn btn-outline-secondary btn-sm" @click="checkAll" :disabled="checkingAll">
-          <i class="bi bi-arrow-repeat me-1"></i><span class="d-none d-sm-inline">Check All Now</span><span class="d-sm-none">Check All</span>
+        <!-- Visible on sm+ only -->
+        <button class="btn btn-outline-secondary btn-sm d-none d-sm-inline-flex" @click="checkAll" :disabled="checkingAll">
+          <i class="bi bi-arrow-repeat me-1"></i>Check All Now
         </button>
-        <button class="btn btn-outline-secondary btn-sm" @click="exportChannels" :disabled="!channels.length">
-          <i class="bi bi-download me-1"></i><span class="d-none d-sm-inline">Export</span>
+        <button class="btn btn-outline-secondary btn-sm d-none d-sm-inline-flex" @click="exportChannels" :disabled="!channels.length">
+          <i class="bi bi-download me-1"></i>Export
         </button>
-        <label class="btn btn-outline-secondary btn-sm mb-0" :class="{ disabled: importing }">
+        <label class="btn btn-outline-secondary btn-sm mb-0 d-none d-sm-inline-flex" :class="{ disabled: importing }">
           <span v-if="importing" class="spinner-border spinner-border-sm me-1"></span>
-          <i v-else class="bi bi-upload me-1"></i><span class="d-none d-sm-inline">Import</span>
+          <i v-else class="bi bi-upload me-1"></i>Import
           <input type="file" accept=".json,application/json" class="d-none" @change="importChannels">
         </label>
-        <button v-if="settings.jellyfin_url" class="btn btn-outline-info btn-sm"
+        <button v-if="settings.jellyfin_url" class="btn btn-outline-info btn-sm d-none d-sm-inline-flex"
           @click="refreshJellyfin" :disabled="jellyfinRefreshing">
           <span v-if="jellyfinRefreshing" class="spinner-border spinner-border-sm me-1"></span>
-          <i v-else class="bi bi-collection-play-fill me-1"></i><span class="d-none d-sm-inline">Refresh Jellyfin</span><span class="d-sm-none">Jellyfin</span>
+          <i v-else class="bi bi-collection-play-fill me-1"></i>Refresh Jellyfin
         </button>
-        <button class="btn btn-danger btn-sm" @click="openAddModal">
+        <!-- sm+: Add Channel -->
+        <button class="btn btn-danger btn-sm d-none d-sm-inline-flex" @click="openAddModal">
           <i class="bi bi-plus-lg me-1"></i>Add Channel
         </button>
+
+        <!-- Mobile: Add Channel + hamburger in a full-width row -->
+        <div class="d-flex d-sm-none gap-2 w-100 position-relative">
+          <button class="btn btn-danger btn-sm flex-grow-1" @click="openAddModal">
+            <i class="bi bi-plus-lg me-1"></i>Add Channel
+          </button>
+          <div class="dropdown position-static">
+            <button class="btn btn-outline-secondary btn-sm" type="button"
+              data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">
+              <i class="bi bi-list"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end w-100">
+              <li>
+                <button class="dropdown-item" type="button" @click="checkAll" :disabled="checkingAll">
+                  <i class="bi bi-arrow-repeat me-2"></i>Check All Now
+                </button>
+              </li>
+              <li><hr class="dropdown-divider"></li>
+              <li>
+                <button class="dropdown-item" type="button" @click="exportChannels" :disabled="!channels.length">
+                  <i class="bi bi-download me-2"></i>Export
+                </button>
+              </li>
+              <li>
+                <label class="dropdown-item" :class="{ disabled: importing }">
+                  <span v-if="importing" class="spinner-border spinner-border-sm me-2"></span>
+                  <i v-else class="bi bi-upload me-2"></i>Import
+                  <input type="file" accept=".json,application/json" class="d-none" @change="importChannels">
+                </label>
+              </li>
+              <li v-if="settings.jellyfin_url"><hr class="dropdown-divider"></li>
+              <li v-if="settings.jellyfin_url">
+                <button class="dropdown-item" type="button" @click="refreshJellyfin" :disabled="jellyfinRefreshing">
+                  <span v-if="jellyfinRefreshing" class="spinner-border spinner-border-sm me-2"></span>
+                  <i v-else class="bi bi-collection-play-fill me-2"></i>Refresh Jellyfin
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
       </div>
     </div>
 

@@ -130,5 +130,8 @@
 
   /* Actions also full width, buttons stretch to fill */
   .page-header-actions { flex: 1 1 100%; }
-  .page-header-actions .btn { flex: 1; }
+  .page-header-actions > .btn { flex: 1; }
+
+  /* Roomier touch targets in the mobile dropdown */
+  .page-header-actions .dropdown-item { padding-top: 0.65rem; padding-bottom: 0.65rem; }
 }
