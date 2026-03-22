@@ -25,30 +25,68 @@
             ref="statusDot"
             data-bs-toggle="tooltip"
             data-bs-placement="bottom"></span>
-      <ul class="nav nav-pills">
+      <ul class="nav nav-pills d-none d-sm-flex">
         <li class="nav-item">
-          <a class="nav-link" :class="{active: view==='channels'}" href="#" @click.prevent="switchView('channels')">
-            <i class="bi bi-collection-play"></i><span class="d-none d-sm-inline ms-1">Channels</span>
+          <a class="nav-link" :class="{active: view==='channels' || view==='channel-videos'}" href="#" @click.prevent="switchView('channels')">
+            <i class="bi bi-collection-play"></i><span class="ms-1">Channels</span>
           </a>
         </li>
         <li class="nav-item">
           <a class="nav-link" :class="{active: view==='history'}" href="#" @click.prevent="switchView('history')">
-            <i class="bi bi-clock-history"></i><span class="d-none d-sm-inline ms-1">History</span>
+            <i class="bi bi-clock-history"></i><span class="ms-1">History</span>
           </a>
         </li>
         <li class="nav-item">
           <a class="nav-link" :class="{active: view==='settings'}" href="#" @click.prevent="switchView('settings')">
-            <i class="bi bi-gear"></i><span class="d-none d-sm-inline ms-1">Settings</span>
+            <i class="bi bi-gear"></i><span class="ms-1">Settings</span>
           </a>
         </li>
         <li class="nav-item" v-if="settings.metube_url">
           <a class="nav-link" :href="settings.metube_url" target="_blank" rel="noopener" title="Open MeTube">
-            <i class="bi bi-box-arrow-up-right"></i><span class="d-none d-sm-inline ms-1">MeTube</span>
+            <i class="bi bi-box-arrow-up-right"></i><span class="ms-1">MeTube</span>
           </a>
         </li>
       </ul>
+      <!-- Hamburger — mobile only -->
+      <button class="btn btn-link p-1 d-sm-none text-body" @click="navOpen = true" aria-label="Open menu">
+        <i class="bi bi-list fs-4"></i>
+      </button>
     </div>
   </nav>
+
+  <!-- ── Mobile nav overlay ───────────────────────────────── -->
+  <transition name="nav-overlay">
+    <div v-if="navOpen" class="nav-overlay d-sm-none">
+      <div class="nav-overlay-header">
+        <span class="fw-semibold d-flex align-items-center gap-2">
+          <i class="bi bi-rss-fill text-danger"></i> TubeChecker
+        </span>
+        <button class="btn-close btn-close-white" @click="navOpen = false" aria-label="Close menu"></button>
+      </div>
+      <nav class="nav-overlay-nav">
+        <a class="nav-overlay-link" :class="{ active: view === 'channels' || view === 'channel-videos' }"
+           href="#" @click.prevent="switchView('channels')">
+          <i class="bi bi-collection-play"></i>Channels
+        </a>
+        <a class="nav-overlay-link" :class="{ active: view === 'history' }"
+           href="#" @click.prevent="switchView('history')">
+          <i class="bi bi-clock-history"></i>History
+        </a>
+        <a class="nav-overlay-link" :class="{ active: view === 'settings' }"
+           href="#" @click.prevent="switchView('settings')">
+          <i class="bi bi-gear"></i>Settings
+        </a>
+        <a v-if="settings.metube_url" class="nav-overlay-link"
+           :href="settings.metube_url" target="_blank" rel="noopener" @click="navOpen = false">
+          <i class="bi bi-box-arrow-up-right"></i>Open MeTube
+        </a>
+      </nav>
+      <div class="nav-overlay-footer">
+        <span class="status-dot flex-shrink-0" :class="metubeStatusClass"></span>
+        <span class="small text-secondary">{{ metubeStatusTooltip }}</span>
+      </div>
+    </div>
+  </transition>
 
   <!-- ── Alert banner ──────────────────────────────────────── -->
   <div v-if="alert" class="alert-banner" :class="'alert-' + alert.type" @click="alert=null">

@@ -40,6 +40,9 @@ createApp({
       // Hash routing
       _pendingRoute: false,
 
+      // Mobile nav overlay
+      navOpen: false,
+
       // Alert banner
       alert: null,
       _alertTimer: null,
@@ -122,6 +125,9 @@ createApp({
       if (!opts.find(o => o.value === this.form.quality)) {
         this.form.quality = 'best';
       }
+    },
+    navOpen(open) {
+      document.body.style.overflow = open ? 'hidden' : '';
     },
   },
 
@@ -213,6 +219,7 @@ createApp({
     },
 
     switchView(v) {
+      this.navOpen = false;
       this._setHash(v);
       this._applyRoute({ view: v, channelId: null });
     },
