@@ -697,6 +697,12 @@
               <label class="form-check-label fw-medium" for="enabledSwitch">Enabled</label>
             </div>
 
+            <div class="form-check form-switch mt-2">
+              <input v-model="form.include_shorts" class="form-check-input" type="checkbox" id="includeShortsSwitch" />
+              <label class="form-check-label fw-medium" for="includeShortsSwitch">Include Shorts</label>
+              <div class="form-text">When off, YouTube Shorts are skipped.</div>
+            </div>
+
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>

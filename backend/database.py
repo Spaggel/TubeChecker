@@ -36,6 +36,7 @@ def init_db() -> None:
     _ensure_column("channels", "format", "VARCHAR DEFAULT 'any'")
     _ensure_column("videos", "retry_count", "INTEGER NOT NULL DEFAULT 0")
     _ensure_column("videos", "next_retry_at", "DATETIME")
+    _ensure_column("channels", "include_shorts", "BOOLEAN NOT NULL DEFAULT 0")
 
 
 def _ensure_column(table: str, column: str, col_type: str) -> None:

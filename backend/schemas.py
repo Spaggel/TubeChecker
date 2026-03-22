@@ -11,6 +11,7 @@ class ChannelCreate(BaseModel):
     quality: str = "best"
     format: str = "any"
     enabled: bool = True
+    include_shorts: bool = False
 
 
 class ChannelUpdate(BaseModel):
@@ -20,6 +21,7 @@ class ChannelUpdate(BaseModel):
     quality: Optional[str] = None
     format: Optional[str] = None
     enabled: Optional[bool] = None
+    include_shorts: Optional[bool] = None
 
 
 class ChannelOut(BaseModel):
@@ -31,6 +33,7 @@ class ChannelOut(BaseModel):
     quality: str = "best"
     format: str = "any"
     enabled: bool
+    include_shorts: bool = False
     last_checked: Optional[datetime] = None
     created_at: datetime
     video_count: int = 0
@@ -63,6 +66,7 @@ class ChannelExport(BaseModel):
     quality: str = "best"
     format: str = "any"
     enabled: bool = True
+    include_shorts: bool = False
 
 
 class ChannelImportRequest(BaseModel):

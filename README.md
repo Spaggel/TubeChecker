@@ -26,11 +26,13 @@ Runs as a single Docker container with a built-in web UI. No external services o
 - Resolves channels from a `@handle`, full URL, or bare `UC…` channel ID
 - Filters by start date — only downloads videos published on or after a given date
 - Per-channel download folder, format, and quality configuration
+- YouTube Shorts are excluded by default — opt in per channel if you want them
 - Download history with status tracking (`sent` / `failed`)
 - Automatic retry of failed downloads with backoff (5 → 15 → 60 min), skipped when MeTube is unreachable
 - Retry failed downloads individually or in bulk
 - Export and import your channel list for backup or migration
 - Optional Jellyfin library refresh after new videos are queued
+- Mobile-friendly responsive UI
 
 ## Requirements
 

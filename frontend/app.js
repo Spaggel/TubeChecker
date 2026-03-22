@@ -66,6 +66,7 @@ createApp({
         quality: 'best',
         format: 'any',
         enabled: true,
+        include_shorts: false,
       },
     };
   },
@@ -279,7 +280,7 @@ createApp({
     openAddModal() {
       this.modal.isEdit = false;
       this.modal.editId = null;
-      this.form = { channel_id: '', name: '', start_date: '', download_dir: '', quality: 'best', format: 'any', enabled: true };
+      this.form = { channel_id: '', name: '', start_date: '', download_dir: '', quality: 'best', format: 'any', enabled: true, include_shorts: false };
       this.modal.instance.show();
     },
 
@@ -294,6 +295,7 @@ createApp({
         quality: ch.quality || 'best',
         format: ch.format || 'any',
         enabled: ch.enabled,
+        include_shorts: ch.include_shorts ?? false,
       };
       this.modal.instance.show();
     },
@@ -311,6 +313,7 @@ createApp({
           quality: this.form.quality || 'best',
           format: this.form.format || 'any',
           enabled: this.form.enabled,
+          include_shorts: this.form.include_shorts,
         };
 
         if (this.modal.isEdit) {

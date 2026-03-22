@@ -19,6 +19,19 @@ _CHANNEL_ID_RE = re.compile(r"UC[A-Za-z0-9_-]{22}")
 RETRY_DELAYS_MINUTES = [5, 15, 60]
 
 
+def _is_short(entry) -> bool:
+    """Return True if the RSS entry represents a YouTube Short.
+
+    YouTube's RSS feed exposes the alternate link as
+    ``https://www.youtube.com/shorts/<id>`` for Shorts and
+    ``https://www.youtube.com/watch?v=<id>`` for regular videos.
+    """
+    for link in getattr(entry, "links", []):
+        if link.get("rel") == "alternate":
+            return "/shorts/" in link.get("href", "")
+    return False
+
+
 def resolve_channel_input(raw: str) -> Optional[str]:
     """
     Accept any of these formats and return the canonical UC... channel ID:
@@ -144,6 +157,10 @@ def check_channel(db: Session, channel: models.Channel, metube_url: str) -> int:
 
         # Respect per-channel start date filter
         if channel.start_date and published_at < channel.start_date:
+            continue
+
+        # Skip Shorts if the channel has not opted in
+        if not channel.include_shorts and _is_short(entry):
             continue
 
         # Skip videos already tracked

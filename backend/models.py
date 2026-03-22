@@ -15,6 +15,7 @@ class Channel(Base):
     quality = Column(String, default="best", nullable=False)
     format = Column(String, default="any", nullable=False)
     enabled = Column(Boolean, default=True, nullable=False)
+    include_shorts = Column(Boolean, default=False, nullable=False)
     last_checked = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
