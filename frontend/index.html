@@ -107,7 +107,7 @@
 
       <!-- ── Mobile: channel cards (hidden on md+) ────────── -->
       <div class="d-md-none">
-        <div v-for="ch in channels" :key="ch.id" class="channel-card card border-0 shadow-sm mb-3">
+        <div v-for="ch in sortedChannels" :key="ch.id" class="channel-card card border-0 shadow-sm mb-3">
           <div class="card-body">
             <div class="d-flex justify-content-between align-items-start mb-2">
               <div class="flex-grow-1 me-2 min-w-0">
@@ -165,7 +165,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="ch in channels" :key="ch.id">
+              <tr v-for="ch in sortedChannels" :key="ch.id">
                 <td>
                   <div class="fw-medium">
                     <a :href="'https://www.youtube.com/channel/' + ch.channel_id"

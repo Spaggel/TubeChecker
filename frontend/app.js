@@ -75,6 +75,9 @@ createApp({
     channelFailedCount() {
       return this.channelVideos.filter(v => v.status === 'failed').length;
     },
+    sortedChannels() {
+      return [...this.channels].sort((a, b) => a.name.localeCompare(b.name));
+    },
     metubeStatusClass() {
       if (this.metubeStatus.ok === null) return 'unknown';
       return this.metubeStatus.ok ? 'ok' : 'error';
