@@ -15,12 +15,34 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       packages: write
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # needed to inspect all tags for version bumping
+
+      - name: Compute next version
+        id: version
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            # Triggered by a manual tag push — use it as-is
+            echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+          else
+            # Triggered by a branch push — bump the minor version
+            LATEST=$(git tag --list 'v*' --sort=-version:refname | head -n1)
+            if [ -z "$LATEST" ]; then
+              NEW="v0.1.0"
+            else
+              V="${LATEST#v}"
+              MAJOR=$(echo "$V" | cut -d. -f1)
+              MINOR=$(echo "$V" | cut -d. -f2)
+              NEW="v${MAJOR}.$((MINOR + 1)).0"
+            fi
+            echo "tag=$NEW" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -38,10 +60,8 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=ref,event=branch
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ steps.version.outputs.tag }}
+            type=raw,value=latest,enable=${{ github.ref_type == 'branch' }}
 
       - name: Build and push
         uses: docker/build-push-action@v5
@@ -54,21 +74,18 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  release:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
-    permissions:
-      contents: write
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Tag commit and push
+        if: github.ref_type == 'branch'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "${{ steps.version.outputs.tag }}"
+          git push origin "${{ steps.version.outputs.tag }}"
 
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create ${{ github.ref_name }} \
-            --title "TubeChecker ${{ github.ref_name }}" \
+          gh release create "${{ steps.version.outputs.tag }}" \
+            --title "TubeChecker ${{ steps.version.outputs.tag }}" \
             --generate-notes
