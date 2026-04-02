@@ -149,8 +149,6 @@ tubechecker:
 
 Add `URL_TUBECHECKER=channels.yourdomain.com` to your `.env` file.
 
-> **Note:** The web UI has no built-in authentication. If it is publicly accessible, protect it with a Traefik `basicauth` middleware or equivalent.
-
 ---
 
 ## Build from Source
@@ -167,13 +165,46 @@ docker compose up -d --build
 
 All settings can be configured from the **Settings** view in the UI and are persisted to the database. Environment variables seed the database on first run and act as defaults — subsequent UI changes take precedence.
 
-| Environment Variable | Default                    | Description                                              |
-|----------------------|----------------------------|----------------------------------------------------------|
-| `DATA_DIR`           | `/data`                    | Directory where application data is stored               |
-| `METUBE_URL`         | `http://localhost:8081`    | Base URL of your MeTube instance (no trailing slash)     |
-| `CHECK_INTERVAL`     | `60`                       | How often to poll RSS feeds, in minutes                  |
-| `JELLYFIN_URL`       | *(empty)*                  | Base URL of your Jellyfin instance — leave empty to disable |
-| `JELLYFIN_API_KEY`   | *(empty)*                  | Jellyfin API key (Dashboard → API Keys)                  |
+| Environment Variable   | Default                    | Description                                              |
+|------------------------|----------------------------|----------------------------------------------------------|
+| `DATA_DIR`             | `/data`                    | Directory where application data is stored               |
+| `METUBE_URL`           | `http://localhost:8081`    | Base URL of your MeTube instance (no trailing slash)     |
+| `CHECK_INTERVAL`       | `60`                       | How often to poll RSS feeds, in minutes                  |
+| `JELLYFIN_URL`         | *(empty)*                  | Base URL of your Jellyfin instance — leave empty to disable |
+| `JELLYFIN_API_KEY`     | *(empty)*                  | Jellyfin API key (Dashboard → API Keys)                  |
+| `AUTH_USERNAME`        | *(empty)*                  | Login username — set together with `AUTH_PASSWORD` to enable auth |
+| `AUTH_PASSWORD`        | *(empty)*                  | Login password                                           |
+| `AUTH_SECRET`          | *(random)*                 | HMAC signing key for session cookies — see [Authentication](#authentication) |
+| `AUTH_SESSION_MAX_AGE` | `604800`                   | Session lifetime in seconds (default: 7 days)            |
+
+---
+
+## Authentication
+
+The web UI has no authentication by default. Set `AUTH_USERNAME` and `AUTH_PASSWORD` to enable a login screen.
+
+```yaml
+environment:
+  - AUTH_USERNAME=admin
+  - AUTH_PASSWORD=your-secure-password
+  - AUTH_SECRET=<generated key>
+```
+
+**`AUTH_SECRET`** signs the session cookies. Without it a random secret is generated at startup, which means all sessions are invalidated whenever the container restarts. Generate a stable key with:
+
+```bash
+python3 -c "import secrets; print(secrets.token_hex(32))"
+```
+
+Or with OpenSSL if Python isn't available locally:
+
+```bash
+openssl rand -hex 32
+```
+
+Paste the output as the value of `AUTH_SECRET`.
+
+> If only `AUTH_USERNAME`/`AUTH_PASSWORD` are set and `AUTH_SECRET` is omitted, the app still works — users just need to log in again after each restart.
 
 ---
 
