@@ -47,6 +47,12 @@
           </a>
         </li>
       </ul>
+      <!-- Sign out — only shown when auth is enabled -->
+      <button v-if="authEnabled" class="btn btn-outline-secondary btn-sm d-none d-sm-flex align-items-center gap-1"
+              @click="logout" title="Sign out">
+        <i class="bi bi-box-arrow-right"></i>
+        <span class="d-none d-lg-inline">Sign out</span>
+      </button>
       <!-- Hamburger — mobile only -->
       <button class="btn btn-link p-1 d-sm-none text-body" @click="navOpen = true" aria-label="Open menu">
         <i class="bi bi-list fs-4"></i>
@@ -79,6 +85,9 @@
         <a v-if="settings.metube_url" class="nav-overlay-link"
            :href="settings.metube_url" target="_blank" rel="noopener" @click="navOpen = false">
           <i class="bi bi-box-arrow-up-right"></i>Open MeTube
+        </a>
+        <a v-if="authEnabled" class="nav-overlay-link" href="/auth/logout">
+          <i class="bi bi-box-arrow-right"></i>Sign out
         </a>
       </nav>
       <div class="nav-overlay-footer">

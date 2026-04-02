@@ -3,11 +3,17 @@ import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import RedirectResponse
 
+from .auth import SESSION_COOKIE, is_auth_enabled, verify_session_token
 from .database import init_db, SessionLocal
 from . import models
 from .routers import channels, settings as settings_router, videos, health as health_router
+from .routers import auth as auth_router
 from . import scheduler as sched_module
 
 logging.basicConfig(
@@ -65,7 +71,37 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# ── Auth middleware ────────────────────────────────────────────────────────────
+# Paths that are always public (login UI + auth endpoints + status check).
+_AUTH_BYPASS = {"/login", "/auth/login", "/auth/logout", "/api/auth/status"}
+
+
+class AuthMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        if not is_auth_enabled():
+            return await call_next(request)
+
+        if request.url.path in _AUTH_BYPASS:
+            return await call_next(request)
+
+        token = request.cookies.get(SESSION_COOKIE)
+        if token and verify_session_token(token):
+            return await call_next(request)
+
+        # Unauthenticated — API gets 401, browser pages get a redirect.
+        if request.url.path.startswith("/api/"):
+            return JSONResponse({"detail": "Not authenticated"}, status_code=401)
+
+        next_path = request.url.path
+        if request.url.query:
+            next_path = f"{next_path}?{request.url.query}"
+        return RedirectResponse(url=f"/login?next={next_path}", status_code=302)
+
+
+app.add_middleware(AuthMiddleware)
+
 # --- API routers (registered before the static file mount) ---
+app.include_router(auth_router.router)
 app.include_router(channels.router)
 app.include_router(settings_router.router)
 app.include_router(videos.router)

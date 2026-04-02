@@ -16,6 +16,10 @@ services:
       # Jellyfin – uncomment to enable (leave blank or omit to disable)
       # - JELLYFIN_URL=http://jellyfin:8096
       # - JELLYFIN_API_KEY=
+      # Auth# – uncomment to enable the login screen
+      #- AUTH_USERNAME=admin
+      #- AUTH_PASSWORD=changeme
+      #- AUTH_SECRET=<generate: python3 -c "import secrets; print(secrets.token_hex(32))">
     # Optional: run on the same Docker network as MeTube / Jellyfin
     # networks:
     #   - media_network

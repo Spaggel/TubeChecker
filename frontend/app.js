@@ -8,12 +8,26 @@ const { createApp } = Vue;
 // Axios instance targeting the same origin
 const api = axios.create({ baseURL: '/api' });
 
+// Redirect to login page on 401 (session expired / auth enabled)
+api.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response?.status === 401) {
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
 createApp({
 
   // ── Data ──────────────────────────────────────────────────
   data() {
     return {
       view: 'channels',
+
+      // Auth
+      authEnabled: false,
 
       channels: [],
       history: [],
@@ -136,6 +150,7 @@ createApp({
   mounted() {
     this.loadChannels();
     this.loadSettings();
+    this.loadAuthStatus();
     // Initialise Bootstrap modal
     this.modal.instance = new bootstrap.Modal(this.$refs.channelModalEl);
     // MeTube status dot tooltip — title is a live function so content is
@@ -160,6 +175,20 @@ createApp({
 
   // ── Methods ───────────────────────────────────────────────
   methods: {
+
+    /* ── Auth ────────────────────────────────────────────── */
+    async loadAuthStatus() {
+      try {
+        const { data } = await api.get('/auth/status');
+        this.authEnabled = data.enabled;
+      } catch {
+        // Non-critical — silently ignore
+      }
+    },
+
+    logout() {
+      window.location.href = '/auth/logout';
+    },
 
     /* ── MeTube health ──────────────────────────────────── */
     async loadMetubeStatus() {
